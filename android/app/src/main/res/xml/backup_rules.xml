@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Exclude sensitive session tokens and auth credentials from unencrypted cloud backup -->
+    <exclude domain="sharedpref" path="chemspace_secure_prefs.xml" />
+    <exclude domain="database" path="chemspace.db" />
+</full-backup-content>

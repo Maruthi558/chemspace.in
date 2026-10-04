@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">ChemSpace</string>
+    <string name="app_subtitle">MOLECULAR PLATFORM</string>
+    <string name="app_tagline">Explore • Learn • Create</string>
+    <string name="app_description">Next-Generation Molecular Intelligence Platform</string>
+    
+    <!-- Navigation & Feature Titles (Exact match to website) -->
+    <string name="title_home">Overview</string>
+    <string name="title_ai_bot">AI Bot</string>
+    <string name="title_chemdraw">ChemDraw 2D/3D</string>
+    <string name="title_rdkit">RDKit Lab</string>
+    <string name="title_spectroscopy">Spectroscopy</string>
+    <string name="title_quantum">Quantum DFT</string>
+    <string name="title_ibm_rxn">IBM RXN</string>
+    <string name="title_periodic_table">Periodic Table</string>
+    <string name="title_scientists">Pioneers</string>
+    <string name="title_chemistry_search">Chemistry Search</string>
+    <string name="title_workspace">My Workspace</string>
+    <string name="title_settings">Settings</string>
+
+    <!-- Authentication -->
+    <string name="login_title">Sign In to ChemSpace</string>
+    <string name="login_subtitle">Access your molecular laboratory and cloud research</string>
+    <string name="email_label">Email or Username</string>
+    <string name="password_label">Password</string>
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Create Account</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="or_continue_with">Or continue with</string>
+    <string name="dont_have_account">Don\'t have an account? Sign Up</string>
+    <string name="already_have_account">Already have an account? Sign In</string>
+</resources>

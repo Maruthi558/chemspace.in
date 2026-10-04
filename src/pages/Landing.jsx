@@ -28,7 +28,9 @@ import {
   Terminal,
   Binary,
   Share2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Smartphone,
+  Download
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import ScientificLayeredBackground from '../components/landing/ScientificLayeredBackground';
@@ -751,6 +753,49 @@ export default function Landing() {
             <span>Explore Pioneers Directory</span>
             <ArrowRight className="w-4 h-4 arrow-micro" />
           </button>
+        </section>
+
+        {/* ───────────────────────────────────────────────────────────────────────
+            10B. CHEMSPACE ANDROID APPLICATION AVAILABILITY
+           ─────────────────────────────────────────────────────────────────────── */}
+        <section className="card-feature-interactive p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 border-l-4 border-l-orange-500">
+          <div className="space-y-3 max-w-xl">
+            <div className="flex items-center gap-2 text-xs font-mono text-orange-500 font-semibold">
+              <Smartphone className="w-4 h-4 text-orange-500" />
+              <span>ChemSpace Mobile Suite</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-[var(--home-text-primary)]">
+              ChemSpace Android App
+            </h3>
+            <p className="text-xs sm:text-sm text-[var(--home-text-secondary)]">
+              Now available for Android. Access high-precision 2D/3D CAD drafting, RDKit descriptors, multi-modal spectroscopy, and AI ChemNova on your mobile device.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-xs">
+              <span className="px-2.5 py-1 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 font-semibold">Version 1.0.0</span>
+              <span className="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">Android 8.0+</span>
+              <span className="px-2.5 py-1 rounded bg-[var(--home-surface-subtle)] text-[var(--home-text-muted)] border border-[var(--home-border)]">ARM64 &amp; x86_64</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            <a
+              href="/downloads/chemspace-v1.0.0.apk"
+              download="chemspace-v1.0.0.apk"
+              className="btn-primary py-3 px-6 text-xs font-bold uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download APK</span>
+            </a>
+            <a
+              href="https://github.com/Maruthi558/chemspace"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary py-3 px-5 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>Android App</span>
+            </a>
+          </div>
         </section>
 
         {/* ───────────────────────────────────────────────────────────────────────

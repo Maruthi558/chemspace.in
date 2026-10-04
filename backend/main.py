@@ -44,6 +44,11 @@ try:
 except Exception:
     RDKIT_AVAILABLE = False
 
+try:
+    from molecule_resolver import resolve_molecule_query, suggest_molecules, generate_2d_svg
+except ImportError:
+    from backend.molecule_resolver import resolve_molecule_query, suggest_molecules, generate_2d_svg
+
 
 def _load_env_file():
     candidates = [
@@ -979,6 +984,28 @@ def verify_phone_otp(data: VerifyPhoneOtpInput):
             "verified": True
         }
     }
+
+class MoleculeResolveInput(BaseModel):
+    query: str
+
+@app.get("/api/molecule/resolve")
+def api_resolve_molecule_get(query: str):
+    return resolve_molecule_query(query)
+
+@app.post("/api/molecule/resolve")
+def api_resolve_molecule_post(data: MoleculeResolveInput):
+    return resolve_molecule_query(data.query)
+
+@app.get("/api/molecule/suggest")
+def api_suggest_molecules(q: str = ""):
+    return {"suggestions": suggest_molecules(q)}
+
+@app.get("/api/molecule/2d")
+def api_get_molecule_2d(smiles: str):
+    svg = generate_2d_svg(smiles)
+    if not svg:
+        raise HTTPException(status_code=400, detail="Unable to render 2D molecular structure.")
+    return Response(content=svg, media_type="image/svg+xml")
 
 @app.post("/api/molecule/parse")
 def parse_molecule(data: SmilesInput):

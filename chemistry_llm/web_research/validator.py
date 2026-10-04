@@ -1,6 +1,6 @@
 """Source Validator and Academic Domain Filter for Chemistry Web Research."""
 
-from typing import List, Optional, Set
+from typing import Any, List, Optional, Set
 import urllib.parse
 
 TRUSTED_SCIENTIFIC_DOMAINS = {
@@ -15,6 +15,7 @@ TRUSTED_SCIENTIFIC_DOMAINS = {
     "springer.com",
     "link.springer.com",
     "ncbi.nlm.nih.gov",
+    "pmc.ncbi.nlm.nih.gov",
     "nih.gov",
     "chemrxiv.org",
     "arxiv.org",
@@ -29,6 +30,14 @@ TRUSTED_SCIENTIFIC_DOMAINS = {
     "berkeley.edu",
     "ox.ac.uk",
     "cam.ac.uk",
+    "wikipedia.org",
+    "en.wikipedia.org",
+    "nobelprize.org",
+    "aps.org",
+    "britannica.com",
+    "chemguide.co.uk",
+    "cell.com",
+    "frontiersin.org"
 }
 
 
