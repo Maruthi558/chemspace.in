@@ -28,6 +28,7 @@ const Settings = React.lazy(() => import('./pages/Settings'));
 const ResearchProjects = React.lazy(() => import('./pages/ResearchProjects'));
 const ChromatographyPage = React.lazy(() => import('./pages/ChromatographyPage'));
 const UserWorkspace = React.lazy(() => import('./pages/UserWorkspace'));
+const MobileAppSimulator = React.lazy(() => import('./pages/MobileAppSimulator'));
 
 import GlobalLoadingBar from './components/common/GlobalLoadingBar';
 import PageLoader from './components/common/PageLoader';
@@ -79,6 +80,11 @@ export default function App() {
                 <Route path="/register" element={<Auth />} />
                 <Route path="/finish-signup" element={<FinishSignUp />} />
                 <Route path="/finishSignUp" element={<FinishSignUp />} />
+
+                {/* ChemSpace Android Mobile Version on Localhost */}
+                <Route path="/mobile" element={<MobileAppSimulator />} />
+                <Route path="/android" element={<MobileAppSimulator />} />
+                <Route path="/app" element={<MobileAppSimulator />} />
 
                 {/* Fallback Redirect */}
                 <Route path="*" element={<Navigate to="/" replace />} />

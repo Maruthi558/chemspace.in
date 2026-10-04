@@ -97,6 +97,14 @@ export default function ChemSpaceAndroidSection() {
             </button>
 
             <a
+              href="/mobile"
+              className="py-3 px-5 text-xs font-bold rounded-xl border border-orange-500/40 bg-orange-500/10 text-orange-300 hover:text-white hover:bg-orange-500/20 shadow-md flex items-center gap-2 cursor-pointer active:scale-[0.98] transition"
+            >
+              <Smartphone className="w-4 h-4 text-orange-400" />
+              <span>RUN MOBILE APP (LOCALHOST)</span>
+            </a>
+
+            <a
               href="https://github.com/Maruthi558/chemspace/releases"
               target="_blank"
               rel="noopener noreferrer"
@@ -126,7 +134,17 @@ export default function ChemSpaceAndroidSection() {
           <div className="absolute inset-0 bg-gradient-to-b from-orange-500/20 via-emerald-500/10 to-transparent rounded-[38px] blur-xl -m-3 pointer-events-none" />
 
           {/* Smartphone Hardware Frame */}
-          <div className="relative rounded-[36px] p-3 border-2 border-[var(--home-border-strong)] bg-neutral-950 shadow-2xl">
+          <a
+            href="/mobile"
+            title="Click to launch ChemSpace Android App on Localhost"
+            className="group block relative rounded-[36px] p-3 border-2 border-[var(--home-border-strong)] bg-neutral-950 shadow-2xl hover:border-orange-500/50 hover:shadow-orange-500/10 transition cursor-pointer"
+          >
+            {/* Launch Badge on hover */}
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-bold font-mono uppercase tracking-wider shadow-lg opacity-0 group-hover:opacity-100 transition duration-200 z-20 flex items-center gap-1">
+              <span>Launch Simulator</span>
+              <ExternalLink className="w-3 h-3" />
+            </div>
+
             {/* Notch / Speaker bar */}
             <div className="w-20 h-3.5 bg-neutral-900 rounded-full mx-auto mb-2 flex items-center justify-center">
               <div className="w-2 h-2 rounded-full bg-neutral-800" />
@@ -182,7 +200,7 @@ export default function ChemSpaceAndroidSection() {
 
             {/* Home indicator bar */}
             <div className="w-24 h-1 bg-white/30 rounded-full mx-auto mt-2" />
-          </div>
+          </a>
         </div>
 
       </div>
