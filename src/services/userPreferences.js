@@ -4,8 +4,9 @@
  */
 
 import { getCurrentUserUid } from './workspaceApi';
+import { API_URL } from './api';
 
-const API_BASE = '/api/workspace/preferences';
+const API_BASE = `${API_URL}/workspace/preferences`;
 
 const DEFAULT_PREFERENCES = {
   language: 'en',

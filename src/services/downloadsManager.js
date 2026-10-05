@@ -6,8 +6,9 @@
 
 import { getCurrentUserUid } from './workspaceApi';
 import { logActivity } from './activityStore';
+import { API_URL } from './api';
 
-const API_BASE = '/api/workspace/downloads';
+const API_BASE = `${API_URL}/workspace/downloads`;
 
 function getAuthHeader() {
   const token = localStorage.getItem('chemspace_token');

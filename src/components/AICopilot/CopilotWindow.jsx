@@ -127,6 +127,7 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
     setQuery('');
     setAttachedFile(null);
     setLiveTranscript('');
+    requestAnimationFrame(() => textareaRef.current?.focus());
 
     const userMessage = {
       role: 'user',

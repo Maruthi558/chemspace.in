@@ -46,7 +46,7 @@ export default function App() {
           <FloatingCameraPreview />
           <GestureTutorialModal />
           <GestureCalibrationModal />
-          <BrowserRouter>
+          <BrowserRouter basename={(import.meta.env.BASE_URL || '/').replace(/\/$/, '') || undefined}>
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Protected Workspace Routes */}

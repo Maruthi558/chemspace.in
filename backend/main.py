@@ -230,6 +230,10 @@ WAF_BLOCKED_PATTERNS = [
 
 @app.middleware("http")
 async def security_and_waf_middleware(request: Request, call_next):
+    # 0. Fast-path CORS preflight requests
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     # 1. DoS Mitigation: Max body payload limit (10MB)
     content_length = request.headers.get("content-length")
     if content_length and int(content_length) > 10 * 1024 * 1024:
@@ -250,8 +254,12 @@ async def security_and_waf_middleware(request: Request, call_next):
                 content={"detail": "Security violation: Malicious injection or path traversal pattern detected."}
             )
 
-    # 3. Sliding-Window Rate Limiting
-    client_ip = request.client.host if request.client else "127.0.0.1"
+    # 3. Sliding-Window Rate Limiting (respecting X-Forwarded-For reverse proxy headers)
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+    else:
+        client_ip = request.client.host if request.client else "127.0.0.1"
     bucket_name = "default"
     if path.startswith("/api/auth"):
         bucket_name = "auth"
@@ -304,6 +312,12 @@ else:
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "https://maruthi558.github.io",
+        "https://chemspace.pages.dev",
+        "https://chemnova.com",
+        "https://www.chemnova.com",
         "https://che445.com",
         "https://chemistry-46c1c-4dac1.web.app",
         "https://maruthii-5b928.firebaseapp.com",
@@ -315,6 +329,7 @@ else:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins if allowed_origins else ["*"],
+    allow_origin_regex=r"^https://.*(\.github\.io|\.firebaseapp\.com|\.web\.app|\.pages\.dev|chemnova\.com|che445\.com).*$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -390,12 +405,14 @@ class PythonScriptInput(BaseModel):
     cell_id: Optional[str] = None
 
 class AIChatInput(BaseModel):
-    query: str
+    query: Optional[str] = ""
+    message: Optional[str] = None
     systemPrompt: Optional[str] = None
     system_prompt: Optional[str] = None
     history: Optional[List[Dict[str, Any]]] = None
     context: Optional[Dict[str, Any]] = None
     language: Optional[str] = "en"
+    conversation_id: Optional[str] = None
     reasoning_details: Optional[Any] = None
 
 # --- QUANTUM CHEMISTRY MODELS ---
@@ -2486,13 +2503,14 @@ if _chemistry_llm_router:
 
 
 @app.post("/api/ai/chat")
+@app.post("/api/chat")
 async def ai_chat_assistant(chat_input: AIChatInput):
     """
     ChemNova Local Chemistry AI endpoint.
     Step 2 Foundation: Communicates locally with our self-hosted Transformer engine
     and chemistry-first router without any third-party external AI APIs.
     """
-    query = (chat_input.query or "").strip()
+    query = (chat_input.query or chat_input.message or "").strip()
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
@@ -2561,7 +2579,7 @@ async def ai_chat_stream(chat_input: AIChatInput):
     Server-Sent Events (SSE) streaming endpoint for ChemNova Chemistry AI.
     Step 7 Foundation: Streams local chemistry AI responses with tool routing.
     """
-    query = (chat_input.query or "").strip()
+    query = (chat_input.query or chat_input.message or "").strip()
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
@@ -2608,7 +2626,15 @@ async def ai_chat_stream(chat_input: AIChatInput):
         yield f"data: {json.dumps({'type': 'done', 'metadata': metadata, 'citations': citations, 'tools': tools, 'tool_used': tool_used})}\n\n"
         yield "data: [DONE]\n\n"
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 
 

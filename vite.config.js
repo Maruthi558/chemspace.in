@@ -14,18 +14,24 @@ function spaFallbackPlugin() {
       try {
         const distDir = path.resolve(__dirname, 'dist');
         const indexPath = path.join(distDir, 'index.html');
-        const fallbackPath = path.join(distDir, '200.html');
+        const fallback200 = path.join(distDir, '200.html');
+        const fallback404 = path.join(distDir, '404.html');
         if (fs.existsSync(indexPath)) {
-          fs.copyFileSync(indexPath, fallbackPath);
+          fs.copyFileSync(indexPath, fallback200);
+          fs.copyFileSync(indexPath, fallback404);
         }
       } catch (err) {
-        console.warn('Could not generate 200.html SPA fallback:', err);
+        console.warn('Could not generate SPA fallbacks (404.html / 200.html):', err);
       }
     }
   };
 }
 
+const isGitHubDeploy = Boolean(process.env.GITHUB_ACTIONS || process.env.GITHUB_PAGES);
+const basePath = isGitHubDeploy ? '/chemspace.in/' : (process.env.VITE_BASE_PATH || './');
+
 export default defineConfig({
+  base: basePath,
   plugins: [react(), tailwindcss(), spaFallbackPlugin()],
   resolve: {
     alias: {

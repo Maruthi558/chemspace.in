@@ -349,7 +349,7 @@ export default function AIChemistryLab() {
   /**
    * Add a new code cell at the end or at a specific index
    */
-  const handleAddCell = (afterIndex = null) => {
+  const handleAddCell = useCallback((afterIndex = null) => {
     const newCell = {
       id: `cell-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       code: '',
@@ -367,21 +367,21 @@ export default function AIChemistryLab() {
       copy.splice(afterIndex + 1, 0, newCell);
       return copy;
     });
-  };
+  }, []);
 
   /**
    * Update code of a cell
    */
-  const handleCodeChange = (cellId, newCode) => {
+  const handleCodeChange = useCallback((cellId, newCode) => {
     setCells((prev) =>
       prev.map((c) => (c.id === cellId ? { ...c, code: newCode } : c))
     );
-  };
+  }, []);
 
   /**
    * Delete a cell
    */
-  const handleDeleteCell = (cellId) => {
+  const handleDeleteCell = useCallback((cellId) => {
     setCells((prev) => {
       if (prev.length <= 1) {
         // Keep at least one empty cell
@@ -398,36 +398,36 @@ export default function AIChemistryLab() {
       }
       return prev.filter((c) => c.id !== cellId);
     });
-  };
+  }, []);
 
   /**
    * Duplicate a cell
    */
-  const handleDuplicateCell = (cellId) => {
-    const targetIdx = cells.findIndex((c) => c.id === cellId);
-    if (targetIdx === -1) return;
-
-    const source = cells[targetIdx];
-    const duplicated = {
-      id: `cell-${Date.now()}`,
-      code: source.code,
-      status: 'idle',
-      executionCount: null,
-      executionTime: null,
-      output: null
-    };
-
+  const handleDuplicateCell = useCallback((cellId) => {
     setCells((prev) => {
+      const targetIdx = prev.findIndex((c) => c.id === cellId);
+      if (targetIdx === -1) return prev;
+
+      const source = prev[targetIdx];
+      const duplicated = {
+        id: `cell-${Date.now()}`,
+        code: source.code,
+        status: 'idle',
+        executionCount: null,
+        executionTime: null,
+        output: null
+      };
+
       const copy = [...prev];
       copy.splice(targetIdx + 1, 0, duplicated);
       return copy;
     });
-  };
+  }, []);
 
   /**
    * Move cell up or down
    */
-  const handleMoveCell = (cellId, direction) => {
+  const handleMoveCell = useCallback((cellId, direction) => {
     setCells((prev) => {
       const idx = prev.findIndex((c) => c.id === cellId);
       if (idx === -1) return prev;
@@ -440,12 +440,12 @@ export default function AIChemistryLab() {
       copy.splice(targetIdx, 0, moved);
       return copy;
     });
-  };
+  }, []);
 
   /**
    * Clear output of single cell
    */
-  const handleClearCellOutput = (cellId) => {
+  const handleClearCellOutput = useCallback((cellId) => {
     setCells((prev) =>
       prev.map((c) =>
         c.id === cellId
@@ -453,7 +453,7 @@ export default function AIChemistryLab() {
           : c
       )
     );
-  };
+  }, []);
 
   /**
    * Clear all outputs in the notebook

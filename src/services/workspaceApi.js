@@ -3,7 +3,9 @@
  * Provides authenticated, user-isolated data fetching and persistence.
  */
 
-const API_BASE = '/api/workspace';
+import { API_URL } from './api.js';
+
+const API_BASE = `${API_URL}/workspace`;
 
 function getAuthHeader() {
   const token = localStorage.getItem('chemspace_token');
@@ -213,7 +215,7 @@ export async function fetchUserAuditLogs(limit = 20) {
  */
 export async function fetchPubChemData(query) {
   try {
-    const res = await fetch(`/api/ai/pubchem?query=${encodeURIComponent(query)}`);
+    const res = await fetch(`${API_URL}/ai/pubchem?query=${encodeURIComponent(query)}`);
     if (res.ok) {
       return await res.json();
     }

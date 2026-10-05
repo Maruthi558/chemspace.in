@@ -118,11 +118,16 @@ export default function Layout() {
   // Keyboard shortcut listener (/ or Ctrl+K) to focus search
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (
-        (e.key === '/' || (e.key === 'k' && (e.ctrlKey || e.metaKey))) &&
-        document.activeElement?.tagName !== 'INPUT' &&
-        document.activeElement?.tagName !== 'TEXTAREA'
-      ) {
+      const active = document.activeElement;
+      const isInputActive =
+        active &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          active.tagName === 'SELECT' ||
+          active.isContentEditable ||
+          Boolean(active.closest && active.closest('input, textarea, select, [contenteditable="true"]')));
+
+      if ((e.key === '/' || (e.key === 'k' && (e.ctrlKey || e.metaKey))) && !isInputActive) {
         e.preventDefault();
         searchInputRef.current?.focus();
       }

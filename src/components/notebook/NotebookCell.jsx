@@ -15,7 +15,7 @@ import PythonEditor from './PythonEditor';
 import CellOutput from './CellOutput';
 import ButtonSpinner from '../common/ButtonSpinner';
 
-export default function NotebookCell({
+function NotebookCell({
   cell,
   cellIndex,
   isFirst = false,
@@ -192,3 +192,5 @@ export default function NotebookCell({
     </div>
   );
 }
+
+export default React.memo(NotebookCell);

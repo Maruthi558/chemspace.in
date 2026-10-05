@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../services/api';
 import {
   Smartphone,
   RotateCcw,
@@ -577,10 +578,10 @@ function ScreenAiBot({ onBack }) {
     setInput('');
     setLoading(true);
 
-    fetch('/api/ai/chat', {
+    fetch(`${API_URL}/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q })
+      body: JSON.stringify({ query: q, message: q })
     })
       .then((res) => res.json())
       .then((data) => {

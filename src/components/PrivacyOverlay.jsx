@@ -32,26 +32,12 @@ export default function PrivacyOverlay() {
       }
     };
 
-    const handleWindowBlur = () => {
-      if (privacyEnabled) {
-        setIsBlurred(true);
-      }
-    };
-
-    const handleWindowFocus = () => {
-      setIsBlurred(false);
-    };
-
     window.addEventListener('chemspace-preferences-changed', handlePrefChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleWindowBlur);
-    window.addEventListener('focus', handleWindowFocus);
 
     return () => {
       window.removeEventListener('chemspace-preferences-changed', handlePrefChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleWindowBlur);
-      window.removeEventListener('focus', handleWindowFocus);
     };
   }, [privacyEnabled]);
 

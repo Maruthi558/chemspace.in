@@ -1,4 +1,4 @@
-import { request } from './api.js';
+import { request, API_URL } from './api.js';
 import {
   resolveChemicalNameToSmiles,
   identifyMoleculeFromSmiles,
@@ -221,7 +221,7 @@ class AICopilotService {
     let streamedSuccess = false;
 
     try {
-      const response = await fetch('/api/ai/chat/stream', {
+      const response = await fetch(`${API_URL}/ai/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -331,7 +331,7 @@ class AICopilotService {
     const intent = this.detectIntent(sanitizedQuery);
 
     try {
-      const response = await request('/chat', {
+      let response = await request('/ai/chat', {
         method: 'POST',
         body: JSON.stringify({
           message: sanitizedQuery,

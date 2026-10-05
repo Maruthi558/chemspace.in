@@ -149,29 +149,21 @@ export default function PythonEditor({
         ))}
       </div>
 
-      {/* Editor & Highlight Container */}
+      {/* Editor Container */}
       <div className="relative flex-1 min-w-0 overflow-hidden">
-        {/* Syntax Highlighted Underlay */}
-        <pre
-          ref={preRef}
-          aria-hidden="true"
-          className="absolute inset-0 m-0 py-2.5 px-3.5 font-mono text-[13px] leading-[22px] pointer-events-none overflow-hidden whitespace-pre-wrap break-words z-0"
-          dangerouslySetInnerHTML={{ __html: highlightPython(code) + '\n' }}
-        />
-
-        {/* Editable Transparent Textarea */}
         <textarea
           ref={textareaRef}
           value={code}
           onChange={(e) => onChange && onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          onScroll={handleScroll}
           readOnly={readOnly}
           spellCheck="false"
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
-          className="relative z-10 w-full h-full m-0 py-2.5 px-3.5 font-mono text-[13px] leading-[22px] bg-transparent text-transparent caret-emerald-500 resize-none outline-none border-none whitespace-pre-wrap break-words selection:bg-emerald-500/25 dark:selection:bg-emerald-500/35"
+          className={`w-full h-full m-0 py-2.5 px-3.5 font-mono text-[13px] leading-[22px] bg-transparent resize-none outline-none border-none whitespace-pre-wrap break-words caret-emerald-500 selection:bg-emerald-500/25 dark:selection:bg-emerald-500/35 transition-colors ${
+            isDark ? 'text-slate-100 placeholder-slate-600' : 'text-stone-900 placeholder-stone-400'
+          }`}
           style={{ minHeight: `${minHeight}px` }}
           rows={Math.max(lineCount, 2)}
         />
