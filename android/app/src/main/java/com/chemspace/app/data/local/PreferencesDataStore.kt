@@ -1,67 +1,101 @@
 package com.chemspace.app.data.local
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.chemspace.app.BuildConfig
+import com.chemspace.app.data.api.UserDto
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "chemspace_preferences")
+private val Context.dataStore by preferencesDataStore(name = "chemspace_preferences")
 
 class PreferencesDataStore(private val context: Context) {
+    private val gson = Gson()
 
     companion object {
-        private val KEY_AUTH_TOKEN = stringPreferencesKey("auth_token")
-        private val KEY_USER_EMAIL = stringPreferencesKey("user_email")
-        private val KEY_USERNAME = stringPreferencesKey("username")
-        private val KEY_USER_ID = stringPreferencesKey("user_id")
-        private val KEY_DARK_THEME = booleanPreferencesKey("dark_theme")
-        private val KEY_API_URL = stringPreferencesKey("custom_api_url")
+        private val KEY_TOKEN = stringPreferencesKey("auth_token")
+        private val KEY_USER = stringPreferencesKey("user_data")
+        private val KEY_THEME_DARK = booleanPreferencesKey("theme_dark")
+        private val KEY_BASE_URL = stringPreferencesKey("custom_base_url")
     }
 
-    val authToken: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[KEY_AUTH_TOKEN]
+    val authTokenFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_TOKEN]
     }
 
-    val userEmail: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[KEY_USER_EMAIL]
+    val currentUserFlow: Flow<UserDto?> = context.dataStore.data.map { prefs ->
+        val json = prefs[KEY_USER]
+        if (!json.isNullOrBlank()) {
+            try {
+                gson.fromJson(json, UserDto::class.java)
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            null
+        }
     }
 
-    val username: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[KEY_USERNAME]
+    val isDarkThemeFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_THEME_DARK] ?: true // ChemSpace default is deep sleek dark mode
     }
 
-    val isDarkTheme: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[KEY_DARK_THEME] ?: true // Default to ChemSpace signature Dark Obsidian
+    val baseUrlFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_BASE_URL] ?: BuildConfig.DEFAULT_BASE_URL
     }
 
-    suspend fun saveSession(token: String, email: String, username: String, userId: String = "") {
+    suspend fun saveAuthSession(token: String?, user: UserDto?) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_AUTH_TOKEN] = token
-            prefs[KEY_USER_EMAIL] = email
-            prefs[KEY_USERNAME] = username
-            if (userId.isNotEmpty()) {
-                prefs[KEY_USER_ID] = userId
+            if (token != null) {
+                prefs[KEY_TOKEN] = token
+            } else {
+                prefs.remove(KEY_TOKEN)
+            }
+
+            if (user != null) {
+                prefs[KEY_USER] = gson.toJson(user)
+            } else {
+                prefs.remove(KEY_USER)
             }
         }
     }
 
     suspend fun clearSession() {
         context.dataStore.edit { prefs ->
-            prefs.remove(KEY_AUTH_TOKEN)
-            prefs.remove(KEY_USER_EMAIL)
-            prefs.remove(KEY_USERNAME)
-            prefs.remove(KEY_USER_ID)
+            prefs.remove(KEY_TOKEN)
+            prefs.remove(KEY_USER)
         }
     }
 
-    suspend fun setDarkTheme(enabled: Boolean) {
+    suspend fun setDarkTheme(isDark: Boolean) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_DARK_THEME] = enabled
+            prefs[KEY_THEME_DARK] = isDark
         }
+    }
+
+    suspend fun setBaseUrl(url: String) {
+        val cleanUrl = if (!url.endsWith("/")) "$url/" else url
+        context.dataStore.edit { prefs ->
+            prefs[KEY_BASE_URL] = cleanUrl
+        }
+    }
+
+    suspend fun resetBaseUrlToDefault() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(KEY_BASE_URL)
+        }
+    }
+
+    suspend fun getAuthTokenSync(): String? {
+        return context.dataStore.data.first()[KEY_TOKEN]
+    }
+
+    suspend fun getBaseUrlSync(): String {
+        return context.dataStore.data.first()[KEY_BASE_URL] ?: BuildConfig.DEFAULT_BASE_URL
     }
 }

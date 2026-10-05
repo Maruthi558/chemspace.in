@@ -1,7 +1,6 @@
 package com.chemspace.app.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -11,80 +10,64 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val ChemSpaceDarkColorScheme = darkColorScheme(
-    primary = ChemSpaceOrangePrimary,
-    onPrimary = ChemSpaceBackgroundDark,
-    primaryContainer = ChemSpaceOrangeContainer,
+private val DarkColorScheme = darkColorScheme(
+    primary = ChemSpaceOrange,
+    onPrimary = DarkBackground,
+    primaryContainer = ChemSpaceOrangeDark,
     onPrimaryContainer = ChemSpaceOrangeLight,
-
-    secondary = ChemSpaceEmeraldAccent,
-    onSecondary = ChemSpaceBackgroundDark,
-    secondaryContainer = ChemSpaceEmeraldContainer,
+    secondary = ChemSpaceEmerald,
+    onSecondary = DarkBackground,
+    secondaryContainer = ChemSpaceEmeraldDark,
     onSecondaryContainer = ChemSpaceEmeraldLight,
-
     tertiary = ChemSpaceCyan,
-    onTertiary = ChemSpaceBackgroundDark,
-
-    background = ChemSpaceBackgroundDark,
-    onBackground = ChemSpaceTextPrimaryDark,
-
-    surface = ChemSpaceSurfaceDark,
-    onSurface = ChemSpaceTextPrimaryDark,
-    surfaceVariant = ChemSpaceCardDark,
-    onSurfaceVariant = ChemSpaceTextSecondaryDark,
-
-    outline = ChemSpaceBorderDark,
-    outlineVariant = ChemSpaceBorderSubtleDark,
-
-    error = ChemSpaceError,
-    onError = ChemSpaceBackgroundDark
+    onTertiary = DarkBackground,
+    background = DarkBackground,
+    onBackground = DarkTextPrimary,
+    surface = DarkSurface,
+    onSurface = DarkTextPrimary,
+    surfaceVariant = DarkSurfaceElevated,
+    onSurfaceVariant = DarkTextSecondary,
+    outline = DarkBorder,
+    outlineVariant = DarkBorderHighlight
 )
 
-private val ChemSpaceLightColorScheme = lightColorScheme(
-    primary = ChemSpaceOrangePrimary,
-    onPrimary = ChemSpaceSurfaceLight,
-    primaryContainer = ChemSpaceOrangeLight.copy(alpha = 0.2f),
-    onPrimaryContainer = ChemSpaceOrangeDark,
-
+private val LightColorScheme = lightColorScheme(
+    primary = ChemSpaceOrange,
+    onPrimary = LightSurface,
+    primaryContainer = ChemSpaceOrangeLight,
+    onPrimaryContainer = DarkBackground,
     secondary = ChemSpaceEmeraldDark,
-    onSecondary = ChemSpaceSurfaceLight,
-    secondaryContainer = ChemSpaceEmeraldLight.copy(alpha = 0.2f),
-    onSecondaryContainer = ChemSpaceEmeraldDark,
-
-    tertiary = ChemSpaceCyan,
-    onTertiary = ChemSpaceSurfaceLight,
-
-    background = ChemSpaceBackgroundLight,
-    onBackground = ChemSpaceTextPrimaryLight,
-
-    surface = ChemSpaceSurfaceLight,
-    onSurface = ChemSpaceTextPrimaryLight,
-    surfaceVariant = ChemSpaceSurfaceElevatedLight,
-    onSurfaceVariant = ChemSpaceTextSecondaryLight,
-
-    outline = ChemSpaceBorderLight,
-
-    error = ChemSpaceError,
-    onError = ChemSpaceSurfaceLight
+    onSecondary = LightSurface,
+    secondaryContainer = ChemSpaceEmeraldLight,
+    onSecondaryContainer = DarkBackground,
+    tertiary = ChemSpaceCyanDark,
+    onTertiary = LightSurface,
+    background = LightBackground,
+    onBackground = LightTextPrimary,
+    surface = LightSurface,
+    onSurface = LightTextPrimary,
+    surfaceVariant = LightSurfaceElevated,
+    onSurfaceVariant = LightTextSecondary,
+    outline = LightBorder,
+    outlineVariant = LightBorderHighlight
 )
 
 @Composable
 fun ChemSpaceTheme(
-    darkTheme: Boolean = true, // Default to ChemSpace signature dark space aesthetic
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) ChemSpaceDarkColorScheme else ChemSpaceLightColorScheme
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val view = LocalView.current
-
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as? Activity)?.window
             if (window != null) {
                 window.statusBarColor = colorScheme.background.toArgb()
                 window.navigationBarColor = colorScheme.background.toArgb()
-                val insetsController = WindowCompat.getInsetsController(window, view)
-                insetsController.isAppearanceLightStatusBars = !darkTheme
-                insetsController.isAppearanceLightNavigationBars = !darkTheme
+                val controller = WindowCompat.getInsetsController(window, view)
+                controller.isAppearanceLightStatusBars = !darkTheme
+                controller.isAppearanceLightNavigationBars = !darkTheme
             }
         }
     }

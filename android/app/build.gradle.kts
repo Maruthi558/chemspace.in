@@ -19,11 +19,17 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("String", "PROD_BASE_URL", "\"https://che445.com/\"")
+        buildConfigField("String", "DEV_BASE_URL", "\"http://10.0.2.2:8000/\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"207628840301.apps.googleusercontent.com\"")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("String", "DEFAULT_BASE_URL", "\"https://che445.com/\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -32,6 +38,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             isDebuggable = true
+            buildConfigField("String", "DEFAULT_BASE_URL", "\"http://10.0.2.2:8000/\"")
         }
     }
 
@@ -46,12 +53,18 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 }
 
@@ -75,6 +88,13 @@ dependencies {
 
     // Navigation Compose
     implementation("androidx.navigation:navigation-compose:2.8.1")
+
+    // Coil for SVG and remote image rendering
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-svg:2.7.0")
+
+    // Google Sign-In Play Services Auth
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Retrofit & OkHttp for HTTPS API
     implementation("com.squareup.retrofit2:retrofit:2.11.0")

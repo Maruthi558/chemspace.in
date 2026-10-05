@@ -59,7 +59,7 @@ export default function ChemSpaceAndroidSection() {
 
           <div className="space-y-2">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[var(--home-text-primary)]">
-              ChemSpace is now available on Android.
+              Take ChemSpace with you.
             </h2>
             <p className="text-xs sm:text-sm text-[var(--home-text-secondary)] leading-relaxed font-sans">
               Experience the full desktop-class chemistry engine natively on mobile: interactive 2D/3D molecular drafting, high-throughput RDKit descriptors, multi-modal spectroscopy, 118 elements periodic matrix, and AI ChemNova intelligence.
@@ -70,18 +70,18 @@ export default function ChemSpaceAndroidSection() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
             <div className="p-2.5 rounded-xl border border-[var(--home-border)] bg-[var(--home-surface-subtle)]">
               <span className="text-[10px] font-mono text-[var(--home-text-muted)] block uppercase">Version</span>
-              <span className="text-xs font-bold text-[var(--home-text-primary)] font-mono">1.0.0 (Release)</span>
+              <span className="text-xs font-bold text-[var(--home-text-primary)] font-mono">v1.0.0 (Build 1)</span>
             </div>
             <div className="p-2.5 rounded-xl border border-[var(--home-border)] bg-[var(--home-surface-subtle)]">
-              <span className="text-[10px] font-mono text-[var(--home-text-muted)] block uppercase">Android</span>
+              <span className="text-[10px] font-mono text-[var(--home-text-muted)] block uppercase">Min Android</span>
               <span className="text-xs font-bold text-emerald-400 font-mono">8.0+ (Oreo — 15)</span>
             </div>
             <div className="p-2.5 rounded-xl border border-[var(--home-border)] bg-[var(--home-surface-subtle)]">
-              <span className="text-[10px] font-mono text-[var(--home-text-muted)] block uppercase">Architecture</span>
-              <span className="text-xs font-bold text-[var(--home-text-primary)] font-mono">ARM64 & x86_64</span>
+              <span className="text-[10px] font-mono text-[var(--home-text-muted)] block uppercase">APK Size</span>
+              <span className="text-xs font-bold text-cyan-400 font-mono">12.6 MB</span>
             </div>
             <div className="p-2.5 rounded-xl border border-[var(--home-border)] bg-[var(--home-surface-subtle)]">
-              <span className="text-[10px] font-mono text-[var(--home-text-muted)] block uppercase">Package</span>
+              <span className="text-[10px] font-mono text-[var(--home-text-muted)] block uppercase">Package ID</span>
               <span className="text-xs font-bold text-orange-400 font-mono">com.chemspace.app</span>
             </div>
           </div>
