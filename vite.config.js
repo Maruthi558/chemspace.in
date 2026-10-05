@@ -20,8 +20,37 @@ function spaFallbackPlugin() {
           fs.copyFileSync(indexPath, fallback200);
           fs.copyFileSync(indexPath, fallback404);
         }
+
+        // Generate deployment package.json in dist for branch runners (e.g. Cloudflare Pages / opt/buildhome)
+        const distPkgPath = path.join(distDir, 'package.json');
+        const rootPkgPath = path.resolve(__dirname, 'package.json');
+        if (fs.existsSync(rootPkgPath)) {
+          const pkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf8'));
+          const distPkg = {
+            name: pkg.name || 'chemspace',
+            private: true,
+            version: pkg.version || '0.0.0',
+            type: 'module',
+            scripts: {
+              build: "echo 'ChemSpace production bundle already compiled'",
+              start: "npx serve .",
+              preview: "vite preview"
+            }
+          };
+          fs.writeFileSync(distPkgPath, JSON.stringify(distPkg, null, 2));
+        }
+
+        // Copy and adjust wrangler.json for dist directory
+        const wranglerPath = path.resolve(__dirname, 'wrangler.json');
+        const distWrangler = path.join(distDir, 'wrangler.json');
+        if (fs.existsSync(wranglerPath)) {
+          const wranglerConfig = JSON.parse(fs.readFileSync(wranglerPath, 'utf8'));
+          wranglerConfig.pages_build_output_dir = '.';
+          wranglerConfig.assets = { directory: '.', not_found_handling: 'single-page-application' };
+          fs.writeFileSync(distWrangler, JSON.stringify(wranglerConfig, null, 2));
+        }
       } catch (err) {
-        console.warn('Could not generate SPA fallbacks (404.html / 200.html):', err);
+        console.warn('Could not generate SPA fallbacks or deployment artifacts:', err);
       }
     }
   };
