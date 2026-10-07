@@ -86,4 +86,11 @@ android/.cxx/
 *.keystore
 android/app/release/
 
+# Android React Native / Expo Prototype
+android-app/node_modules/
+android-app/.expo/
+android-app/.env
+android-app/dist/
+
+
 

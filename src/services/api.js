@@ -463,21 +463,39 @@ export async function calculateQuantumEnergies(method, basis_set, smiles = null)
   };
 }
 
-export function executePythonScript(code, sessionId = null, cellId = null) {
-  return request('/rdkit/execute', {
-    method: 'POST',
-    body: JSON.stringify({ code, session_id: sessionId, cell_id: cellId })
-  });
+import { executeLocalPythonScript, resetSessionEnvironment } from './rdkitRunner.js';
+
+export async function executePythonScript(code, sessionId = null, cellId = null) {
+  try {
+    const res = await request('/rdkit/execute', {
+      method: 'POST',
+      body: JSON.stringify({ code, session_id: sessionId, cell_id: cellId })
+    });
+    if (res && res.status === 'success') {
+      return res;
+    }
+  } catch {
+    // Backend offline, fallback to local kernel
+  }
+
+  // Execute using ChemSpace high-precision client-side RDKit kernel
+  return executeLocalPythonScript(code, sessionId, cellId);
 }
 
-export function resetNotebookSession(sessionId = null) {
-  return request('/rdkit/reset-session', {
-    method: 'POST',
-    body: JSON.stringify({ session_id: sessionId })
-  });
+export async function resetNotebookSession(sessionId = null) {
+  resetSessionEnvironment(sessionId);
+  try {
+    return await request('/rdkit/reset-session', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: sessionId })
+    });
+  } catch {
+    return { status: 'success', message: 'Session reset locally.' };
+  }
 }
 
 export function logoutUser() {
   localStorage.removeItem('chemspace_token');
   localStorage.removeItem('chemspace_user');
 }
+

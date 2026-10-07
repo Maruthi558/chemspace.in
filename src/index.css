@@ -292,23 +292,32 @@ nav,
   }
 }
 
-/* Scrollbar styling */
+/* ==========================================================================
+   PRECISION CAD BLUEPRINT SCROLLBAR SYSTEM
+   ========================================================================== */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-medium);
+  background: rgba(148, 163, 184, 0.35);
   border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-strong);
+  background: var(--accent-orange);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -326,27 +335,30 @@ nav,
 }
 
 /* ==========================================================================
-   REFINED COMPONENT CLASSES
+   REFINED GLASSY CAD COMPONENT CLASSES
    ========================================================================== */
 
-/* Modern Card */
+/* Modern CAD Card with Glassmorphism */
 .card-scientific {
   border-radius: 1.25rem;
   background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
   box-shadow: var(--card-shadow);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-scientific:hover {
   border-color: var(--border-medium);
+  box-shadow: var(--card-shadow-hover);
 }
 
 /* Glass panel */
 .glass-panel {
   background: var(--bg-card-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-subtle);
   box-shadow: var(--card-shadow);
 }
@@ -996,4 +1008,80 @@ html[data-theme="light"] .chemspace-shimmer,
     animation: none !important;
     transition: opacity 0.15s ease !important;
   }
+}
+
+/* ==========================================================================
+   BLUEPRINT TECHNICAL GRID & HATCH PATTERNS (Bklit / Architecture CAD Style)
+   ========================================================================== */
+.blueprint-hatch-dark {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    rgba(255, 255, 255, 0.05) 6px,
+    rgba(255, 255, 255, 0.05) 8px
+  );
+}
+
+.blueprint-hatch-light {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    rgba(0, 0, 0, 0.04) 6px,
+    rgba(0, 0, 0, 0.04) 8px
+  );
+}
+
+.blueprint-dot-grid-dark {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.blueprint-dot-grid-light {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.12) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+@keyframes blueprint-sparkle {
+  0%, 100% {
+    transform: scale(0.85) translate(0, 0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.25) translate(2px, -3px);
+    opacity: 1;
+  }
+}
+
+.animate-blueprint-sparkle {
+  animation: blueprint-sparkle 3.5s ease-in-out infinite;
+}
+
+/* Continuous Marquee Animations */
+@keyframes marquee-left {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes marquee-right {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0%); }
+}
+
+.animate-marquee-left {
+  display: flex;
+  width: max-content;
+  animation: marquee-left 42s linear infinite;
+}
+
+.animate-marquee-right {
+  display: flex;
+  width: max-content;
+  animation: marquee-right 42s linear infinite;
+}
+
+.animate-marquee-left:hover,
+.animate-marquee-right:hover {
+  animation-play-state: paused;
 }

@@ -228,8 +228,8 @@ export default function InteractiveChromatogram({
         >
           <defs>
             <linearGradient id="chromGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.35" />
-              <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.0" />
+              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
             </linearGradient>
             <clipPath id="plotClip">
               <rect x={padding.left} y={padding.top} width={plotWidth} height={plotHeight} />

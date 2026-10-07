@@ -2502,18 +2502,107 @@ if _chemistry_llm_router:
     app.include_router(_chemistry_llm_router)
 
 
+GOOGLE_AI_STUDIO_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_AI_STUDIO_API_KEY") or ""
+GEMINI_BACKEND_MODELS = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"]
+
+CHEMSPACE_DEFAULT_SYSTEM_PROMPT = """You are ChemSpace AI, an advanced, highly capable chemistry and scientific intelligence assistant.
+Explain organic, inorganic, physical, and biochemistry concepts clearly.
+Generate canonical SMILES, formulas, IUPAC names, and spectra interpretations when requested.
+Be mathematically rigorous, scientifically reliable, and friendly."""
+
+
+def call_google_ai_studio_gemini(query: str, system_prompt: str = None, history: list = None) -> Optional[dict]:
+    """
+    Direct call to Google AI Studio Gemini API with candidate fallback models.
+    """
+    if not GOOGLE_AI_STUDIO_API_KEY:
+        return None
+
+    contents = []
+    if history and isinstance(history, list):
+        for h in history[-6:]:
+            role = "model" if h.get("role") == "assistant" else "user"
+            text_content = h.get("content") or ""
+            if text_content:
+                contents.append({"role": role, "parts": [{"text": text_content}]})
+    contents.append({"role": "user", "parts": [{"text": query}]})
+
+    payload = {
+        "contents": contents,
+        "systemInstruction": {
+            "parts": [{"text": system_prompt or CHEMSPACE_DEFAULT_SYSTEM_PROMPT}]
+        },
+        "generationConfig": {
+            "temperature": 0.4,
+            "maxOutputTokens": 2048,
+            "topP": 0.95
+        }
+    }
+    data_bytes = json.dumps(payload).encode("utf-8")
+
+    for model in GEMINI_BACKEND_MODELS:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GOOGLE_AI_STUDIO_API_KEY}"
+            req = urllib.request.Request(
+                url,
+                data=data_bytes,
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                text = data["candidates"][0]["content"]["parts"][0]["text"]
+                return {
+                    "text": text,
+                    "model": model,
+                    "provider": "Google AI Studio (Gemini)"
+                }
+        except Exception:
+            continue
+    return None
+
+
 @app.post("/api/ai/chat")
 @app.post("/api/chat")
 async def ai_chat_assistant(chat_input: AIChatInput):
     """
-    ChemNova Local Chemistry AI endpoint.
-    Step 2 Foundation: Communicates locally with our self-hosted Transformer engine
-    and chemistry-first router without any third-party external AI APIs.
+    ChemSpace Chemistry AI endpoint with Google AI Studio Gemini intelligence
+    and local ChemNova transformer fallback.
     """
     query = (chat_input.query or chat_input.message or "").strip()
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
+    system_prompt = getattr(chat_input, "systemPrompt", None) or CHEMSPACE_DEFAULT_SYSTEM_PROMPT
+    history = getattr(chat_input, "history", [])
+
+    # 1. Primary: Google AI Studio Gemini Real-Time Reasoning (async thread)
+    try:
+        gemini_result = await asyncio.to_thread(call_google_ai_studio_gemini, query, system_prompt, history)
+    except Exception:
+        gemini_result = None
+
+    if gemini_result and gemini_result.get("text"):
+        return {
+            "status": "success",
+            "provider": gemini_result["provider"],
+            "connected": True,
+            "step": 8,
+            "model": gemini_result["model"],
+            "query": query,
+            "response": gemini_result["text"],
+            "responseText": gemini_result["text"],
+            "intent": "chemistry",
+            "confidence": 0.99,
+            "conversation_id": getattr(chat_input, "conversation_id", "session_default"),
+            "tool_used": True,
+            "tools": ["Google AI Studio Gemini", "Scientific Knowledge"],
+            "citations": [],
+            "warnings": [],
+            "metadata": {"provider": "Google AI Studio", "model": gemini_result["model"]},
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+
+    # 2. Secondary: ChemNova Local Transformer Engine (if installed)
     if CHEMISTRY_LLM_CONNECTED:
         try:
             from chemistry_llm.api.routes import get_tool_assistant
@@ -2561,13 +2650,13 @@ async def ai_chat_assistant(chat_input: AIChatInput):
 
     return {
         "status": "success",
-        "provider": "ChemNova Local Chemistry AI Engine",
+        "provider": "ChemSpace Intelligence Engine",
         "connected": True,
         "step": 7,
-        "model": "ChemNova Instruction LM + Chemistry Tools",
+        "model": "ChemSpace Science Core",
         "query": query,
-        "response": "Hello! I am ChemNova, your local chemistry AI engine.",
-        "responseText": "Hello! I am ChemNova, your local chemistry AI engine.",
+        "response": f"Hello! I am ChemSpace AI. I am here to help you solve chemistry calculations, simulate spectra, and explore reactions for '{query}'.",
+        "responseText": f"Hello! I am ChemSpace AI. I am here to help you solve chemistry calculations, simulate spectra, and explore reactions for '{query}'.",
         "intent": "chemistry",
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
@@ -2576,44 +2665,98 @@ async def ai_chat_assistant(chat_input: AIChatInput):
 @app.post("/api/ai/chat/stream")
 async def ai_chat_stream(chat_input: AIChatInput):
     """
-    Server-Sent Events (SSE) streaming endpoint for ChemNova Chemistry AI.
-    Step 7 Foundation: Streams local chemistry AI responses with tool routing.
+    Server-Sent Events (SSE) streaming endpoint for ChemSpace Chemistry AI.
+    Streams real-time tokens from Google AI Studio Gemini API with local fallback.
     """
     query = (chat_input.query or chat_input.message or "").strip()
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
-    intent_detected = "CHEMISTRY"
-    text = ""
-    citations = []
-    metadata = {}
-    tools = []
-    tool_used = False
-
-    if CHEMISTRY_LLM_CONNECTED:
-        try:
-            from chemistry_llm.api.routes import get_tool_assistant
-            assistant = get_tool_assistant()
-            res = assistant.process_request(query)
-            text = res["answer"]
-            intent_detected = "TOOL_AIDED" if res["tool_used"] else "CHEMISTRY"
-            citations = res.get("citations", [])
-            metadata = res.get("metadata", {})
-            tools = res.get("tools", [])
-            tool_used = res.get("tool_used", False)
-        except Exception as e:
-            text = f"ChemNova Chemistry Engine error: {e}"
-    else:
-        text = "ChemNova Local Chemistry AI Engine initialized."
+    system_prompt = getattr(chat_input, "systemPrompt", None) or CHEMSPACE_DEFAULT_SYSTEM_PROMPT
+    history = getattr(chat_input, "history", [])
 
     async def event_generator():
+        streamed_any = False
+
+        # 1. Try streaming from Google AI Studio Gemini API via SSE
+        if GOOGLE_AI_STUDIO_API_KEY:
+            contents = []
+            if history and isinstance(history, list):
+                for h in history[-6:]:
+                    role = "model" if h.get("role") == "assistant" else "user"
+                    text_content = h.get("content") or ""
+                    if text_content:
+                        contents.append({"role": role, "parts": [{"text": text_content}]})
+            contents.append({"role": "user", "parts": [{"text": query}]})
+
+            payload = {
+                "contents": contents,
+                "systemInstruction": {"parts": [{"text": system_prompt}]},
+                "generationConfig": {"temperature": 0.4, "maxOutputTokens": 2048, "topP": 0.95}
+            }
+            data_bytes = json.dumps(payload).encode("utf-8")
+
+            for model in GEMINI_BACKEND_MODELS:
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?key={GOOGLE_AI_STUDIO_API_KEY}&alt=sse"
+                    req = urllib.request.Request(
+                        url,
+                        data=data_bytes,
+                        headers={"Content-Type": "application/json"}
+                    )
+                    with urllib.request.urlopen(req, timeout=12) as resp:
+                        meta_payload = {
+                            'type': 'metadata',
+                            'intent': 'CHEMISTRY',
+                            'metadata': {'provider': 'Google AI Studio', 'model': model},
+                            'citations': [],
+                            'tools': [f'Google AI Studio ({model})', 'Real-time Chemistry Intelligence'],
+                            'tool_used': True,
+                        }
+                        yield f"data: {json.dumps(meta_payload)}\n\n"
+
+                        for line in resp:
+                            decoded = line.decode("utf-8").strip()
+                            if decoded.startswith("data:"):
+                                chunk_str = decoded[5:].strip()
+                                if chunk_str and chunk_str != "[DONE]":
+                                    try:
+                                        parsed = json.loads(chunk_str)
+                                        delta_text = parsed.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                                        if delta_text:
+                                            streamed_any = True
+                                            yield f"data: {json.dumps({'type': 'delta', 'content': delta_text})}\n\n"
+                                    except Exception:
+                                        pass
+                        if streamed_any:
+                            yield f"data: {json.dumps({'type': 'done', 'metadata': {'model': model}, 'tool_used': True})}\n\n"
+                            yield "data: [DONE]\n\n"
+                            return
+                except Exception:
+                    continue
+
+        # 2. Local Fallback if Google AI Studio is unavailable
+        text = ""
+        intent_detected = "CHEMISTRY"
+        if CHEMISTRY_LLM_CONNECTED:
+            try:
+                from chemistry_llm.api.routes import get_tool_assistant
+                assistant = get_tool_assistant()
+                res = assistant.process_request(query)
+                text = res["answer"]
+                intent_detected = "TOOL_AIDED" if res["tool_used"] else "CHEMISTRY"
+            except Exception as e:
+                text = f"ChemSpace Chemistry Engine: {e}"
+        else:
+            text = f"ChemSpace AI response for: {query}. The system is ready to assist with your molecular queries, reactions, and spectroscopy."
+
         meta_payload = {
             'type': 'metadata',
             'intent': intent_detected,
-            'metadata': metadata,
-            'citations': citations,
-            'tools': tools,
-            'tool_used': tool_used,
+            'metadata': {},
+            'citations': [],
+            'tools': ['ChemSpace Local Core'],
+            'tool_used': False,
         }
         yield f"data: {json.dumps(meta_payload)}\n\n"
 
@@ -2623,7 +2766,7 @@ async def ai_chat_stream(chat_input: AIChatInput):
             yield f"data: {json.dumps({'type': 'delta', 'content': chunk})}\n\n"
             await asyncio.sleep(0.012)
 
-        yield f"data: {json.dumps({'type': 'done', 'metadata': metadata, 'citations': citations, 'tools': tools, 'tool_used': tool_used})}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'metadata': {}, 'citations': [], 'tools': [], 'tool_used': False})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(
@@ -2635,6 +2778,7 @@ async def ai_chat_stream(chat_input: AIChatInput):
             "X-Accel-Buffering": "no"
         }
     )
+
 
 
 

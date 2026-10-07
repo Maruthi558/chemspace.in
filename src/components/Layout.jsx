@@ -28,9 +28,10 @@ import {
   X,
   ChevronRight,
   Sliders,
-  Sparkles
+  Sparkles,
+  Smartphone,
+  Download
 } from 'lucide-react';
-import CopilotWindow from './AICopilot/CopilotWindow';
 import GoogleAuthModal from './GoogleAuthModal';
 import RouteTransition from './loading/RouteTransition';
 import PageLoader from './common/PageLoader';
@@ -72,6 +73,12 @@ const NAV_GROUPS = [
     items: [
       { to: '/periodic-table', label: 'Periodic Table', icon: Grid, badge: '118 El', formula: 'H¹ → Og¹¹⁸' },
       { to: '/scientists', label: 'Pioneers', icon: Award, badge: 'Nobel', formula: '1834 → 2026' },
+    ]
+  },
+  {
+    title: 'Mobile Platform',
+    items: [
+      { to: '/mobile', label: 'Android App & APK', icon: Smartphone, badge: 'APK', formula: 'ANDROID' },
     ]
   }
 ];
@@ -210,9 +217,37 @@ export default function Layout() {
   }
 
   const isDark = theme === 'dark';
+  const isLanding = location.pathname === '/';
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col md:flex-row font-sans bg-[var(--bg-page)] text-[var(--text-primary)] relative">
+
+      {/* ───────────────────────────────────────────────────────────────────────
+          FLIPKART-STYLE MOBILE APP BANNER (< 768px)
+         ─────────────────────────────────────────────────────────────────────── */}
+      {!isLanding && (
+        <div className="md:hidden flex items-center justify-between px-3 py-1.5 bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 border-b border-orange-500/30 text-white text-xs z-30 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-[10px] border border-orange-500/30">
+            CS
+          </div>
+          <div className="truncate">
+            <span className="font-bold text-[11px] text-white">ChemSpace Android App</span>
+            <span className="text-[9px] font-mono text-gray-400 ml-1.5">v1.0.0 • 12.6 MB</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <a
+            href="/downloads/chemspace-v1.0.0.apk"
+            download="chemspace-v1.0.0.apk"
+            className="px-2.5 py-1 rounded-md bg-orange-500 text-white font-bold text-[10px] shadow-sm active:scale-95 transition flex items-center gap-1 cursor-pointer"
+          >
+            <Download className="w-3 h-3" />
+            <span>APK</span>
+          </a>
+        </div>
+      </div>
+      )}
 
       {/* ───────────────────────────────────────────────────────────────────────
           MOBILE TOP APP BAR (< 768px)
@@ -309,12 +344,12 @@ export default function Layout() {
             {/* Bottom tools & User profile */}
             <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
               <button
-                onClick={() => { setMobileMenuOpen(false); setAiModalOpen(true); }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-mono border border-emerald-500/25 bg-emerald-500/10 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition"
-                title="ChemSpace AI"
+                onClick={() => { setMobileMenuOpen(false); navigate('/rdkit-lab'); }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-mono border border-emerald-500/25 bg-emerald-500/10 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition cursor-pointer"
+                title="Open AI Chemistry Lab"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>ChemSpace AI</span>
+                <span>RDKit AI Lab</span>
               </button>
 
               {user ? (
@@ -502,44 +537,48 @@ export default function Layout() {
         </div>
       </aside>
 
+
       {/* ───────────────────────────────────────────────────────────────────────
           MAIN WORKSPACE WRAPPER (Independent Scroll Container)
           Assigned id="main-scroll-container" so hand gesture vision scrolling works!
          ─────────────────────────────────────────────────────────────────────── */}
       <div id="main-scroll-container" className="flex-1 h-full min-w-0 w-full flex flex-col overflow-y-auto overflow-x-hidden relative z-10">
         {/* Adaptive 5-Layer Precision Scientific Environment */}
-        <ScientificWorkspaceBackground />
+        {!isLanding && <ScientificWorkspaceBackground />}
 
         {/* Desktop Top Header Bar */}
-        <header className="hidden md:flex h-13 border-b px-5 items-center justify-between backdrop-blur-xl shrink-0 sticky top-0 z-20 bg-[var(--bg-header)] border-[var(--border-subtle)]">
-          {/* Quick Search */}
-          <form onSubmit={handleSearchSubmit} className="relative w-80">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tools, molecules, SMILES..."
-              className="w-full pl-8 pr-10 py-1.5 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition text-[var(--text-primary)]"
-            />
-            {searchQuery ? (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-white"
-                title="Clear search"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            ) : (
-              <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-mono px-1.5 py-0.5 rounded border border-inherit bg-[var(--bg-inner)] text-[var(--text-muted)] pointer-events-none select-none">
-                /
-              </kbd>
-            )}
-          </form>
+        {!isLanding && (
+          <header className="hidden md:flex h-13 border-b px-5 items-center justify-between backdrop-blur-xl shrink-0 sticky top-0 z-20 bg-[var(--bg-header)] border-[var(--border-subtle)]">
+          {/* Quick Search & Top Authentication Row */}
+          <div className="flex items-center gap-3">
+            <form onSubmit={handleSearchSubmit} className="relative w-72 lg:w-80">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tools, molecules, SMILES..."
+                className="w-full pl-8 pr-10 py-1.5 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition text-[var(--text-primary)]"
+              />
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-white cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              ) : (
+                <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-mono px-1.5 py-0.5 rounded border border-inherit bg-[var(--bg-inner)] text-[var(--text-muted)] pointer-events-none select-none">
+                  /
+                </kbd>
+              )}
+            </form>
+          </div>
 
-          {/* Quick Action Badges & Controls */}
+          {/* Quick Action Badges, APK & Top Login/Logout */}
           <div className="flex items-center gap-2.5">
             {gesturesEnabled && (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
@@ -548,7 +587,26 @@ export default function Layout() {
               </div>
             )}
 
+            {/* APK Direct Download Action */}
+            <a
+              href="/downloads/chemspace-v1.0.0.apk"
+              download="chemspace-v1.0.0.apk"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-500/40 bg-orange-500/10 text-orange-400 hover:text-white hover:bg-orange-500/20 text-[11px] font-mono font-bold transition shadow-sm cursor-pointer"
+              title="Download ChemSpace Android APK (v1.0.0 • 12.6 MB)"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>APK</span>
+              <span className="text-[9px] px-1 py-0.2 rounded bg-orange-500/20 font-mono">12.6 MB</span>
+            </a>
 
+            <button
+              onClick={() => navigate('/mobile')}
+              className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] text-[11px] font-mono text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition cursor-pointer"
+              title="Simulate ChemSpace Android App in Browser"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-orange-400" />
+              <span>App Mode</span>
+            </button>
 
             <button
               onClick={() => setGesturePanelOpen(true)}
@@ -557,8 +615,43 @@ export default function Layout() {
               <Hand className="w-3.5 h-3.5" />
               <span>Vision Controls</span>
             </button>
+
+            {/* Top Header Login / Logout Authentication Pill */}
+            {user ? (
+              <div className="flex items-center gap-2 pl-1.5 border-l border-[var(--border-subtle)]">
+                <div
+                  onClick={() => navigate('/workspace')}
+                  className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-emerald-500/40 transition cursor-pointer"
+                  title="Open User Workspace"
+                >
+                  <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold">
+                    {user.name ? user.name.slice(0, 1).toUpperCase() : 'U'}
+                  </div>
+                  <span className="text-xs font-medium max-w-[100px] truncate text-[var(--text-primary)]">
+                    {user.name || user.email || 'Scientist'}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="p-1.5 rounded-lg border border-transparent hover:border-rose-500/30 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => navigate('/login')}
+                className="btn-orange py-1.5 px-3 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition"
+                title="Sign In / Register Account"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>SIGN IN</span>
+              </button>
+            )}
           </div>
         </header>
+        )}
 
         {/* Main Content Area with Smooth Route Transitions */}
         <main className="flex-1 w-full min-w-0 flex flex-col">
@@ -570,8 +663,7 @@ export default function Layout() {
         </main>
       </div>
 
-      {/* Floating AI Assistant (ChemSpace AI) & Global Modals */}
-      <CopilotWindow isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} onOpen={() => setAiModalOpen(true)} />
+      {/* Global Modals */}
       {googleModalOpen && <GoogleAuthModal onClose={() => setGoogleModalOpen(false)} />}
       {gesturePanelOpen && <GestureControlPanel isOpen={gesturePanelOpen} onClose={() => setGesturePanelOpen(false)} />}
     </div>

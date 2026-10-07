@@ -36,6 +36,10 @@ import { useTheme } from '../context/ThemeContext';
 import ScientificLayeredBackground from '../components/landing/ScientificLayeredBackground';
 import ChemSpaceLogo from '../components/ChemSpaceLogo';
 import ChemSpaceAndroidSection from '../components/landing/ChemSpaceAndroidSection';
+import BlueprintGridHero from '../components/landing/BlueprintGridHero';
+import ResearchBenchmarkSection from '../components/landing/ResearchBenchmarkSection';
+import ChemSpaceAIResearchSection from '../components/landing/ChemSpaceAIResearchSection';
+import ScientificCommunityReviewsSection from '../components/landing/ScientificCommunityReviewsSection';
 
 /**
  * SCIENTIFIC_MODULES
@@ -182,7 +186,8 @@ export default function Landing() {
 
   return (
     <div className="w-full min-h-screen relative select-none bg-transparent text-[var(--home-text-primary)] overflow-x-hidden font-sans">
-      {/* Main Content Workspace Container */}
+      {/* 1. ARCHITECTURAL CAD BLUEPRINT HERO & FLOATING ISLAND NAVBAR (Exact Bklit UI Architecture) */}
+      <BlueprintGridHero />
 
       {/* Main Content Workspace Container */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-16 sm:space-y-24">
@@ -292,9 +297,6 @@ export default function Landing() {
               );
             })}
           </div>
-
-          {/* ChemSpace Android Application Hero Feature Section */}
-          <ChemSpaceAndroidSection />
         </section>
 
         {/* ───────────────────────────────────────────────────────────────────────
@@ -359,6 +361,16 @@ export default function Landing() {
             </div>
           </div>
         </section>
+
+        {/* ───────────────────────────────────────────────────────────────────────
+            CHEMSPACE REAL-TIME MOLECULAR AI RESEARCH (Unified CAD Blueprint)
+           ─────────────────────────────────────────────────────────────────────── */}
+        <ChemSpaceAIResearchSection />
+
+        {/* ───────────────────────────────────────────────────────────────────────
+            RESEARCH BENCHMARK & CHEMICAL INTELLIGENCE VISUALIZER
+           ─────────────────────────────────────────────────────────────────────── */}
+        <ResearchBenchmarkSection />
 
         {/* ───────────────────────────────────────────────────────────────────────
             4. SCIENTIFIC CAPABILITY METRICS STRIP
@@ -732,6 +744,14 @@ export default function Landing() {
             </button>
           </div>
         </section>
+
+        {/* ───────────────────────────────────────────────────────────────────────
+            10. PEER REVIEWS & SPECTROSCOPY COMMUNITY ENDORSEMENTS (DUAL INFINITE MARQUEE)
+           ─────────────────────────────────────────────────────────────────────── */}
+        <ScientificCommunityReviewsSection />
+
+        {/* ChemSpace Android Native App & APK Download Suite (Flipkart-Style App Experience) */}
+        <ChemSpaceAndroidSection />
 
         {/* ───────────────────────────────────────────────────────────────────────
             10. SCIENTIFIC PIONEERS DIRECTORY

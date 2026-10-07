@@ -9,6 +9,7 @@ import {
   detectLanguage,
   formatMultilingualMoleculeResponse
 } from './languageDetector.js';
+import { streamGeminiChat, callGeminiChat } from './geminiService.js';
 
 // Scientific terminology phoneme & speech transcription correction dictionary
 const SCIENTIFIC_CORRECTIONS = {
@@ -304,7 +305,47 @@ class AICopilotService {
       }
     } catch (err) {
       if (err.name === 'AbortError') throw err;
-      console.warn('[AICopilotService] Streaming fallback notice:', err.message);
+      console.warn('[AICopilotService] Backend stream unavailable, using Google AI Studio Gemini engine:', err.message);
+    }
+
+    // Direct Real-Time Streaming via Google AI Studio Gemini API
+    if (!streamedSuccess) {
+      try {
+        let accumulatedGeminiText = '';
+        for await (const chunk of streamGeminiChat(sanitizedQuery, {
+          history: this.history,
+          systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
+          signal
+        })) {
+          if (signal && signal.aborted) break;
+          accumulatedGeminiText = chunk.text;
+          streamedSuccess = true;
+          yield {
+            text: accumulatedGeminiText,
+            delta: chunk.delta,
+            isDone: chunk.isDone,
+            citations: [],
+            metadata: { provider: 'Google AI Studio (Gemini)', model: chunk.model },
+            tools: ['Gemini 3.5 Flash', 'Scientific ChemSpace Knowledge'],
+            tool_used: true
+          };
+        }
+
+        if (accumulatedGeminiText) {
+          this.history.push({ role: 'user', content: sanitizedQuery });
+          this.history.push({
+            role: 'assistant',
+            content: accumulatedGeminiText,
+            metadata: { provider: 'Google AI Studio (Gemini)' },
+            tools: ['Google AI Studio'],
+            tool_used: true
+          });
+          return;
+        }
+      } catch (geminiErr) {
+        if (geminiErr.name === 'AbortError') throw geminiErr;
+        console.warn('[AICopilotService] Direct Gemini stream fallback:', geminiErr.message);
+      }
     }
 
     // Fallback: Use standard sendMessage if streaming fails or is interrupted
@@ -388,7 +429,24 @@ class AICopilotService {
       if (error.name === 'AbortError') {
         throw error;
       }
-      console.warn('[AICopilotService] Using high-fidelity scientific client engine:', error.message);
+      console.warn('[AICopilotService] Backend chat unavailable, trying Google AI Studio Gemini API:', error.message);
+
+      // Attempt direct Google AI Studio Gemini API call
+      try {
+        const geminiRes = await callGeminiChat(sanitizedQuery, {
+          history: this.history,
+          systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
+          signal
+        });
+        if (geminiRes && geminiRes.responseText) {
+          this.history.push({ role: 'user', content: sanitizedQuery });
+          this.history.push({ role: 'assistant', content: geminiRes.responseText });
+          return geminiRes;
+        }
+      } catch (geminiError) {
+        if (geminiError.name === 'AbortError') throw geminiError;
+        console.warn('[AICopilotService] Google AI Studio direct query also had fallback:', geminiError.message);
+      }
 
       // Client-side fallback reasoning
       const fallback = await this.generateClientFallbackResponse(sanitizedQuery, context, langInfo);
