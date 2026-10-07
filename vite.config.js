@@ -19,6 +19,7 @@ function spaFallbackPlugin() {
         if (fs.existsSync(indexPath)) {
           fs.copyFileSync(indexPath, fallback200);
           fs.copyFileSync(indexPath, fallback404);
+          fs.writeFileSync(path.join(distDir, '.nojekyll'), '');
         }
 
         // Generate deployment package.json in dist for branch runners (e.g. Cloudflare Pages / opt/buildhome)
