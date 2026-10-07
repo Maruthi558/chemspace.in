@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Sparkles,
   Star,
@@ -9,9 +9,12 @@ import {
   Radio,
   Cpu,
   FlaskConical,
-  ExternalLink
+  ExternalLink,
+  LayoutGrid,
+  Repeat
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { GlowCard, GlowCardGrid } from '../ui/GlowCardGrid';
 
 export const REVIEWS_ROW_1 = [
   {
@@ -187,10 +190,13 @@ function ReviewCard({ item }) {
 export default function ScientificCommunityReviewsSection() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [viewMode, setViewMode] = useState('glow'); // 'glow' | 'marquee'
 
   // Double the items for seamless infinite loop
   const list1 = [...REVIEWS_ROW_1, ...REVIEWS_ROW_1];
   const list2 = [...REVIEWS_ROW_2, ...REVIEWS_ROW_2];
+
+  const EMOJI_LIST = ['🧪', '🔬', '⚡', '⚛️', '🧬', '💎'];
 
   return (
     <section className={`relative w-full py-16 px-4 sm:px-8 border-t border-inherit overflow-hidden ${
@@ -213,50 +219,92 @@ export default function ScientificCommunityReviewsSection() {
             </p>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-neutral-400">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>100% Peer-Reviewed Verification</span>
-          </div>
-        </div>
-
-        {/* Dual Continuous Infinite Marquee Ribbons with Edge Fade Masks */}
-        <div className="relative w-full overflow-hidden space-y-5">
-          {/* Left and Right Smooth Gradient Masks */}
-          <div
-            className="absolute left-0 inset-y-0 w-24 sm:w-36 pointer-events-none z-10"
-            style={{
-              background: isDark
-                ? 'linear-gradient(to right, #090b10 10%, transparent 100%)'
-                : 'linear-gradient(to right, #fafafa 10%, transparent 100%)'
-            }}
-          />
-          <div
-            className="absolute right-0 inset-y-0 w-24 sm:w-36 pointer-events-none z-10"
-            style={{
-              background: isDark
-                ? 'linear-gradient(to left, #090b10 10%, transparent 100%)'
-                : 'linear-gradient(to left, #fafafa 10%, transparent 100%)'
-            }}
-          />
-
-          {/* Row 1: Scrolling Left */}
-          <div className="overflow-hidden flex">
-            <div className="animate-marquee-left flex gap-4">
-              {list1.map((item, idx) => (
-                <ReviewCard key={`r1-${idx}`} item={item} />
-              ))}
+          <div className="flex items-center gap-3">
+            {/* View Mode Toggle Button */}
+            <div className="flex items-center p-1 rounded-xl border border-neutral-700/50 bg-neutral-900/60 text-xs font-mono">
+              <button
+                onClick={() => setViewMode('glow')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === 'glow' ? 'bg-orange-500 text-white font-bold shadow-xs' : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Glow Grid</span>
+              </button>
+              <button
+                onClick={() => setViewMode('marquee')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === 'marquee' ? 'bg-orange-500 text-white font-bold shadow-xs' : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Repeat className="w-3.5 h-3.5" />
+                <span>Marquee</span>
+              </button>
             </div>
-          </div>
 
-          {/* Row 2: Scrolling Right */}
-          <div className="overflow-hidden flex">
-            <div className="animate-marquee-right flex gap-4">
-              {list2.map((item, idx) => (
-                <ReviewCard key={`r2-${idx}`} item={item} />
-              ))}
+            <div className="hidden lg:flex items-center gap-2 text-xs font-mono text-neutral-400">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Verified</span>
             </div>
           </div>
         </div>
+
+        {/* View 1: Interactive GlowCardGrid with Dynamic Pointer Tracking */}
+        {viewMode === 'glow' ? (
+          <GlowCardGrid>
+            {REVIEWS_ROW_1.map((item, idx) => (
+              <GlowCard
+                key={item.authorName}
+                name={item.authorName}
+                handle={`@${item.authorName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`}
+                avatar={item.authorAvatar}
+                emoji={EMOJI_LIST[idx % EMOJI_LIST.length]}
+                role={item.authorTagline}
+                quote={item.quote}
+                rating={item.rating}
+              />
+            ))}
+          </GlowCardGrid>
+        ) : (
+          /* View 2: Dual Continuous Infinite Marquee Ribbons with Edge Fade Masks */
+          <div className="relative w-full overflow-hidden space-y-5">
+            {/* Left and Right Smooth Gradient Masks */}
+            <div
+              className="absolute left-0 inset-y-0 w-24 sm:w-36 pointer-events-none z-10"
+              style={{
+                background: isDark
+                  ? 'linear-gradient(to right, #090b10 10%, transparent 100%)'
+                  : 'linear-gradient(to right, #fafafa 10%, transparent 100%)'
+              }}
+            />
+            <div
+              className="absolute right-0 inset-y-0 w-24 sm:w-36 pointer-events-none z-10"
+              style={{
+                background: isDark
+                  ? 'linear-gradient(to left, #090b10 10%, transparent 100%)'
+                  : 'linear-gradient(to left, #fafafa 10%, transparent 100%)'
+              }}
+            />
+
+            {/* Row 1: Scrolling Left */}
+            <div className="overflow-hidden flex">
+              <div className="animate-marquee-left flex gap-4">
+                {list1.map((item, idx) => (
+                  <ReviewCard key={`r1-${idx}`} item={item} />
+                ))}
+              </div>
+            </div>
+
+            {/* Row 2: Scrolling Right */}
+            <div className="overflow-hidden flex">
+              <div className="animate-marquee-right flex gap-4">
+                {list2.map((item, idx) => (
+                  <ReviewCard key={`r2-${idx}`} item={item} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Metric Badges */}
         <div className="pt-2 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-inherit">

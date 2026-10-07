@@ -27,6 +27,7 @@ import { useTheme } from '../../context/ThemeContext';
 import ChemSpaceLogo from '../ChemSpaceLogo';
 import MolecularLatticeCanvas from './MolecularLatticeCanvas';
 import { logoutUser } from '../../services/firebase';
+import { IconSwap, IconSwapItem } from '../ui/IconSwap';
 
 export default function BlueprintGridHero({ onOpenSearch }) {
   const navigate = useNavigate();
@@ -170,16 +171,20 @@ export default function BlueprintGridHero({ onOpenSearch }) {
               </kbd>
             </button>
 
-            {/* Contrast Mode / Theme Toggle Button */}
+            {/* Contrast Mode / Theme Toggle Button with IconSwap */}
             <button
               onClick={toggleTheme}
-              className={`p-2 rounded-xl border transition cursor-pointer ${
+              className={`p-2 rounded-xl border transition cursor-pointer relative overflow-hidden will-change-transform flex items-center justify-center ${
                 isDark ? 'border-neutral-800 hover:bg-neutral-900 text-neutral-300' : 'border-neutral-200 hover:bg-neutral-100 text-neutral-700'
               }`}
               title={`Switch Theme (Current: ${theme})`}
               aria-label="Toggle theme"
             >
-              {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+              <IconSwap>
+                <IconSwapItem key={theme}>
+                  {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-700" />}
+                </IconSwapItem>
+              </IconSwap>
             </button>
 
             {/* Top Navbar Login / Logout Button */}
@@ -411,9 +416,12 @@ export default function BlueprintGridHero({ onOpenSearch }) {
                       : 'border-neutral-200 bg-white text-neutral-600 hover:text-black hover:border-neutral-300'
                   }`}
                 >
-                  <Terminal className="w-3.5 h-3.5" />
+                  <IconSwap>
+                    <IconSwapItem key={copiedCmd ? 'check' : 'terminal'}>
+                      {copiedCmd ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Terminal className="w-3.5 h-3.5" />}
+                    </IconSwapItem>
+                  </IconSwap>
                   <span>npm i @chemspace/core</span>
-                  {copiedCmd ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : null}
                 </button>
               </div>
 

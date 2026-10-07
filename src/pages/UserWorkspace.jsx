@@ -44,6 +44,7 @@ import {
 } from '../services/downloadsManager';
 import SecurityWatermark from '../components/SecurityWatermark';
 import { SkeletonTable } from '../components/loading/SkeletonLoader';
+import ScientistReviewsGlowSection from '../components/workspace/ScientistReviewsGlowSection';
 
 export default function UserWorkspace() {
   const navigate = useNavigate();
@@ -375,6 +376,11 @@ export default function UserWorkspace() {
             </div>
           )
         )}
+
+        {/* SCIENTIST REVIEWS & GLOWING CUSTOMER EXPERIENCE */}
+        <div className="pt-8 border-t border-[var(--border-subtle)]">
+          <ScientistReviewsGlowSection showSubmit={true} />
+        </div>
       </div>
     </div>
   );

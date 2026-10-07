@@ -38,6 +38,7 @@ import ResearchBenchmarkSection from '../components/landing/ResearchBenchmarkSec
 import ChemSpaceAIResearchSection from '../components/landing/ChemSpaceAIResearchSection';
 import ScientificCommunityReviewsSection from '../components/landing/ScientificCommunityReviewsSection';
 import ScientificResearchArticlesSection from '../components/landing/ScientificResearchArticlesSection';
+import ChemicalIntelligenceMilestones from '../components/landing/ChemicalIntelligenceMilestones';
 import FluidGradientTextShowcase from '../components/landing/FluidGradientTextShowcase';
 
 /**
@@ -779,6 +780,11 @@ export default function Landing() {
             <ArrowRight className="w-4 h-4 arrow-micro" />
           </button>
         </section>
+
+        {/* ───────────────────────────────────────────────────────────────────────
+            12. SCIENTIFIC RESEARCH PEDIGREE & WORK MILESTONES
+           ─────────────────────────────────────────────────────────────────────── */}
+        <ChemicalIntelligenceMilestones />
 
         {/* ───────────────────────────────────────────────────────────────────────
             13. INTERACTIVE FLUID GRADIENT MONOLITH

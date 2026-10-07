@@ -41,6 +41,7 @@ import ChemSpaceLogo from './ChemSpaceLogo';
 import ScientificWorkspaceBackground from './common/ScientificWorkspaceBackground';
 import { getRecentActivities } from '../services/activityStore';
 import { logoutUser } from '../services/firebase';
+import { IconSwap, IconSwapItem } from './ui/IconSwap';
 
 const NAV_GROUPS = [
   {
@@ -230,10 +231,14 @@ export default function Layout() {
         <div className="flex items-center gap-2">
           <button
             onClick={toggleTheme}
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] transition"
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] transition relative overflow-hidden will-change-transform"
             aria-label="Toggle theme"
           >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <IconSwap>
+              <IconSwapItem key={theme}>
+                {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+              </IconSwapItem>
+            </IconSwap>
           </button>
 
           <button
@@ -454,13 +459,17 @@ export default function Layout() {
         <div className="p-3 border-t border-inherit space-y-2 shrink-0">
           <button
             onClick={toggleTheme}
-            className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} p-2 rounded-lg border border-[var(--border-subtle)] text-xs transition ${
+            className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} p-2 rounded-lg border border-[var(--border-subtle)] text-xs transition relative overflow-hidden will-change-transform ${
               isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100'
             }`}
             title={`Toggle Theme (${theme})`}
           >
             <div className="flex items-center gap-2">
-              {isDark ? <Moon className="w-3.5 h-3.5 text-slate-300" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+              <IconSwap>
+                <IconSwapItem key={theme}>
+                  {isDark ? <Moon className="w-3.5 h-3.5 text-slate-300" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+                </IconSwapItem>
+              </IconSwap>
               {!sidebarCollapsed && <span className="text-[11px] font-medium">{isDark ? 'Obsidian' : 'Ceramic'}</span>}
             </div>
           </button>
