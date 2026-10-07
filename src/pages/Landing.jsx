@@ -40,6 +40,7 @@ import BlueprintGridHero from '../components/landing/BlueprintGridHero';
 import ResearchBenchmarkSection from '../components/landing/ResearchBenchmarkSection';
 import ChemSpaceAIResearchSection from '../components/landing/ChemSpaceAIResearchSection';
 import ScientificCommunityReviewsSection from '../components/landing/ScientificCommunityReviewsSection';
+import ScientificResearchArticlesSection from '../components/landing/ScientificResearchArticlesSection';
 
 /**
  * SCIENTIFIC_MODULES
@@ -750,11 +751,18 @@ export default function Landing() {
            ─────────────────────────────────────────────────────────────────────── */}
         <ScientificCommunityReviewsSection />
 
-        {/* ChemSpace Android Native App & APK Download Suite (Flipkart-Style App Experience) */}
+        {/* ───────────────────────────────────────────────────────────────────────
+            11. SCIENTIFIC RESEARCH ARTICLES & CHEMICAL PUBLICATIONS
+           ─────────────────────────────────────────────────────────────────────── */}
+        <ScientificResearchArticlesSection />
+
+        {/* ───────────────────────────────────────────────────────────────────────
+            12. CHEMSPACE ANDROID NATIVE APP & APK DOWNLOAD SUITE
+           ─────────────────────────────────────────────────────────────────────── */}
         <ChemSpaceAndroidSection />
 
         {/* ───────────────────────────────────────────────────────────────────────
-            10. SCIENTIFIC PIONEERS DIRECTORY
+            13. SCIENTIFIC PIONEERS DIRECTORY
            ─────────────────────────────────────────────────────────────────────── */}
         <section className="card-feature-interactive p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
@@ -780,7 +788,7 @@ export default function Landing() {
         </section>
 
         {/* ───────────────────────────────────────────────────────────────────────
-            11. PROFESSIONAL SCIENTIFIC FOOTER
+            14. PROFESSIONAL SCIENTIFIC FOOTER
            ─────────────────────────────────────────────────────────────────────── */}
         <footer className="pt-10 pb-6 border-t border-[var(--home-border)] space-y-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
