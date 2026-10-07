@@ -73,24 +73,8 @@ chemistry_llm/data/processed/*
 !chemistry_llm/data/processed/.gitkeep
 chemistry_llm/data/evaluation/*
 !chemistry_llm/data/evaluation/.gitkeep
-
-# Android Build & Secrets Guard
-.gradle/
-android/.gradle/
-android/**/build/
-android/local.properties
-android/captures/
-android/.externalNativeBuild/
-android/.cxx/
-*.jks
-*.keystore
-android/app/release/
-
-# Android React Native / Expo Prototype
-android-app/node_modules/
-android-app/.expo/
-android-app/.env
-android-app/dist/
-
-
-
+# Agent and IDE Metadata
+.agents/
+.agent/
+.gemini/
+.gsd/

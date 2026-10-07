@@ -7,8 +7,6 @@ import {
   Search,
   Sun,
   Moon,
-  Smartphone,
-  Download,
   Terminal,
   ExternalLink,
   Layers,
@@ -68,18 +66,18 @@ export default function BlueprintGridHero({ onOpenSearch }) {
     <div
       onMouseMove={handleMouseMove}
       className={`relative w-full overflow-hidden select-none transition-colors duration-300 ${
-        isDark ? 'bg-[#08090a] text-white' : 'bg-[#ffffff] text-neutral-900'
+        isDark ? 'bg-[#08090a] text-white' : 'bg-[var(--bg-page)] text-neutral-900'
       }`}
     >
       {/* ───────────────────────────────────────────────────────────────────────
-          1. FLOATING TOP ISLAND NAVBAR (Exact CAD Blueprint Island Aesthetic)
+          1. FLOATING TOP ISLAND NAVBAR (CAD Blueprint Aesthetic)
          ─────────────────────────────────────────────────────────────────────── */}
       <div className="pt-4 sm:pt-6 px-4 sm:px-8 max-w-7xl mx-auto relative z-30">
         <header
-          className={`flex items-center justify-between px-4 sm:px-6 py-2.5 rounded-2xl border backdrop-blur-xl shadow-sm transition-all ${
+          className={`flex items-center justify-between px-4 sm:px-6 py-2.5 rounded-2xl border backdrop-blur-xl transition-all ${
             isDark
-              ? 'bg-[#101216]/90 border-neutral-800 text-neutral-200'
-              : 'bg-white/90 border-neutral-200 text-neutral-800 shadow-[0_2px_12px_rgba(0,0,0,0.04)]'
+              ? 'bg-[#101216]/90 border-neutral-800 text-neutral-200 shadow-[0_4px_20px_rgba(0,0,0,0.4)]'
+              : 'bg-white/90 border-neutral-200/90 text-neutral-800 shadow-[0_4px_20px_rgba(0,0,0,0.06)]'
           }`}
         >
           {/* Left: Brand Icon + Actual ChemSpace Navigation Links */}
@@ -143,48 +141,33 @@ export default function BlueprintGridHero({ onOpenSearch }) {
             </nav>
           </div>
 
-          {/* Right: Search, Android APK, App Mode, Discord, Theme Toggle */}
+          {/* Right: Search, Theme Toggle, Authentication */}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Search Input Button */}
             <button
               onClick={() => {
-                const searchInput = document.querySelector('input[type="text"]');
-                if (searchInput) searchInput.focus();
-                else if (onOpenSearch) onOpenSearch();
+                const searchInput = document.querySelector('input[placeholder*="Search"], input[placeholder*="molecular"], input[type="text"]');
+                if (searchInput) {
+                  searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  setTimeout(() => searchInput.focus(), 300);
+                } else if (onOpenSearch) {
+                  onOpenSearch();
+                } else {
+                  navigate('/chemdraw');
+                }
               }}
-              className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-mono transition ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-mono transition cursor-pointer ${
                 isDark
-                  ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700'
-                  : 'bg-neutral-100 border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-300'
+                  ? 'bg-neutral-900/80 border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700 hover:bg-neutral-850'
+                  : 'bg-neutral-100/90 border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-neutral-200/60'
               }`}
+              title="Search molecular tools and algorithms (Ctrl+K)"
             >
-              <Search className="w-3.5 h-3.5 opacity-60" />
-              <span>Search SMILES / Tools</span>
-              <kbd className="px-1.5 py-0.5 rounded text-[10px] bg-neutral-800/60 dark:bg-neutral-800 text-neutral-400 border border-neutral-700/50">
+              <Search className="w-3.5 h-3.5 opacity-70" />
+              <span className="hidden sm:inline">Search Tools / SMILES</span>
+              <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] bg-neutral-800/80 dark:bg-neutral-800 text-neutral-300 border border-neutral-700/50">
                 Ctrl K
               </kbd>
-            </button>
-
-            {/* Android APK Download Pill */}
-            <a
-              href="/downloads/chemspace-v1.0.0.apk"
-              download="chemspace-v1.0.0.apk"
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-orange-500/30 bg-orange-500/10 text-orange-400 hover:text-white hover:bg-orange-500/20 text-xs font-mono font-bold transition shadow-sm cursor-pointer"
-              title="Download ChemSpace Android APK"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>APK</span>
-            </a>
-
-            {/* Mobile App Mode Simulator Switch */}
-            <button
-              onClick={() => navigate('/mobile')}
-              className={`p-2 rounded-xl border transition ${
-                isDark ? 'border-neutral-800 hover:bg-neutral-900 text-neutral-400' : 'border-neutral-200 hover:bg-neutral-100 text-neutral-600'
-              }`}
-              title="ChemSpace Mobile Simulator"
-            >
-              <Smartphone className="w-3.5 h-3.5 text-orange-400" />
             </button>
 
             {/* Contrast Mode / Theme Toggle Button */}
@@ -225,7 +208,7 @@ export default function BlueprintGridHero({ onOpenSearch }) {
             ) : (
               <button
                 onClick={() => navigate('/login')}
-                className="btn-orange py-1.5 px-3 rounded-xl text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition"
+                className="btn-orange py-1.5 px-3.5 rounded-xl text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition"
                 title="Sign In / Register Account"
               >
                 <LogIn className="w-3.5 h-3.5" />

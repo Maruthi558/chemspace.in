@@ -28,19 +28,17 @@ import {
   Terminal,
   Binary,
   Share2,
-  FileSpreadsheet,
-  Smartphone,
-  Download
+  FileSpreadsheet
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import ScientificLayeredBackground from '../components/landing/ScientificLayeredBackground';
 import ChemSpaceLogo from '../components/ChemSpaceLogo';
-import ChemSpaceAndroidSection from '../components/landing/ChemSpaceAndroidSection';
 import BlueprintGridHero from '../components/landing/BlueprintGridHero';
 import ResearchBenchmarkSection from '../components/landing/ResearchBenchmarkSection';
 import ChemSpaceAIResearchSection from '../components/landing/ChemSpaceAIResearchSection';
 import ScientificCommunityReviewsSection from '../components/landing/ScientificCommunityReviewsSection';
 import ScientificResearchArticlesSection from '../components/landing/ScientificResearchArticlesSection';
+import FluidGradientTextShowcase from '../components/landing/FluidGradientTextShowcase';
 
 /**
  * SCIENTIFIC_MODULES
@@ -757,12 +755,7 @@ export default function Landing() {
         <ScientificResearchArticlesSection />
 
         {/* ───────────────────────────────────────────────────────────────────────
-            12. CHEMSPACE ANDROID NATIVE APP & APK DOWNLOAD SUITE
-           ─────────────────────────────────────────────────────────────────────── */}
-        <ChemSpaceAndroidSection />
-
-        {/* ───────────────────────────────────────────────────────────────────────
-            13. SCIENTIFIC PIONEERS DIRECTORY
+            12. SCIENTIFIC PIONEERS DIRECTORY
            ─────────────────────────────────────────────────────────────────────── */}
         <section className="card-feature-interactive p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
@@ -786,6 +779,11 @@ export default function Landing() {
             <ArrowRight className="w-4 h-4 arrow-micro" />
           </button>
         </section>
+
+        {/* ───────────────────────────────────────────────────────────────────────
+            13. INTERACTIVE FLUID GRADIENT MONOLITH
+           ─────────────────────────────────────────────────────────────────────── */}
+        <FluidGradientTextShowcase />
 
         {/* ───────────────────────────────────────────────────────────────────────
             14. PROFESSIONAL SCIENTIFIC FOOTER

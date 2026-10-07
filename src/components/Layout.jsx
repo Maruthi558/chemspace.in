@@ -28,9 +28,7 @@ import {
   X,
   ChevronRight,
   Sliders,
-  Sparkles,
-  Smartphone,
-  Download
+  Sparkles
 } from 'lucide-react';
 import GoogleAuthModal from './GoogleAuthModal';
 import RouteTransition from './loading/RouteTransition';
@@ -73,12 +71,6 @@ const NAV_GROUPS = [
     items: [
       { to: '/periodic-table', label: 'Periodic Table', icon: Grid, badge: '118 El', formula: 'H¹ → Og¹¹⁸' },
       { to: '/scientists', label: 'Pioneers', icon: Award, badge: 'Nobel', formula: '1834 → 2026' },
-    ]
-  },
-  {
-    title: 'Mobile Platform',
-    items: [
-      { to: '/mobile', label: 'Android App & APK', icon: Smartphone, badge: 'APK', formula: 'ANDROID' },
     ]
   }
 ];
@@ -222,32 +214,7 @@ export default function Layout() {
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col md:flex-row font-sans bg-[var(--bg-page)] text-[var(--text-primary)] relative">
 
-      {/* ───────────────────────────────────────────────────────────────────────
-          FLIPKART-STYLE MOBILE APP BANNER (< 768px)
-         ─────────────────────────────────────────────────────────────────────── */}
-      {!isLanding && (
-        <div className="md:hidden flex items-center justify-between px-3 py-1.5 bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 border-b border-orange-500/30 text-white text-xs z-30 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-[10px] border border-orange-500/30">
-            CS
-          </div>
-          <div className="truncate">
-            <span className="font-bold text-[11px] text-white">ChemSpace Android App</span>
-            <span className="text-[9px] font-mono text-gray-400 ml-1.5">v1.0.0 • 12.6 MB</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <a
-            href="/downloads/chemspace-v1.0.0.apk"
-            download="chemspace-v1.0.0.apk"
-            className="px-2.5 py-1 rounded-md bg-orange-500 text-white font-bold text-[10px] shadow-sm active:scale-95 transition flex items-center gap-1 cursor-pointer"
-          >
-            <Download className="w-3 h-3" />
-            <span>APK</span>
-          </a>
-        </div>
-      </div>
-      )}
+
 
       {/* ───────────────────────────────────────────────────────────────────────
           MOBILE TOP APP BAR (< 768px)
@@ -578,7 +545,7 @@ export default function Layout() {
             </form>
           </div>
 
-          {/* Quick Action Badges, APK & Top Login/Logout */}
+          {/* Quick Action Badges & Top Login/Logout */}
           <div className="flex items-center gap-2.5">
             {gesturesEnabled && (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
@@ -586,27 +553,6 @@ export default function Layout() {
                 <span>Gestures Active</span>
               </div>
             )}
-
-            {/* APK Direct Download Action */}
-            <a
-              href="/downloads/chemspace-v1.0.0.apk"
-              download="chemspace-v1.0.0.apk"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-500/40 bg-orange-500/10 text-orange-400 hover:text-white hover:bg-orange-500/20 text-[11px] font-mono font-bold transition shadow-sm cursor-pointer"
-              title="Download ChemSpace Android APK (v1.0.0 • 12.6 MB)"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>APK</span>
-              <span className="text-[9px] px-1 py-0.2 rounded bg-orange-500/20 font-mono">12.6 MB</span>
-            </a>
-
-            <button
-              onClick={() => navigate('/mobile')}
-              className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] text-[11px] font-mono text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition cursor-pointer"
-              title="Simulate ChemSpace Android App in Browser"
-            >
-              <Smartphone className="w-3.5 h-3.5 text-orange-400" />
-              <span>App Mode</span>
-            </button>
 
             <button
               onClick={() => setGesturePanelOpen(true)}
