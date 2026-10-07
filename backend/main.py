@@ -16,6 +16,7 @@ from typing import Annotated, Optional, List, Dict, Any
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, Field
 import sys
 import urllib.request
@@ -2827,9 +2828,23 @@ def query_pubchem(query: str):
         }
 
 
+# Serve built Vite frontend static files if dist folder exists
+_dist_candidates = [
+    Path(__file__).resolve().parent.parent / "dist",
+    Path("/app/dist"),
+    Path("dist")
+]
+for _candidate in _dist_candidates:
+    if _candidate.exists() and (_candidate / "index.html").exists():
+        app.mount("/", StaticFiles(directory=str(_candidate), html=True), name="frontend_spa")
+        break
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    server_port = int(os.getenv("PORT", "8000"))
+    server_host = os.getenv("HOST", "0.0.0.0")
+    uvicorn.run("main:app" if os.path.exists("main.py") else "backend.main:app", host=server_host, port=server_port)
 
 
 
