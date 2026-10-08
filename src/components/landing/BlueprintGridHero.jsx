@@ -351,7 +351,7 @@ export default function BlueprintGridHero({ onOpenSearch }) {
                   <span className="px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30 font-bold text-[10px]">
                     ChemSpace
                   </span>
-                  <span className="font-semibold">Version 2.4 • Gemini AI</span>
+                  <span className="font-semibold">Version 3.8 • DeepChem AI</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </div>
 
@@ -552,11 +552,11 @@ export default function BlueprintGridHero({ onOpenSearch }) {
               </div>
             </div>
 
-            {/* Box 5: Google Gemini Multimodal Chemistry AI */}
+            {/* Box 5: ChemSpace DeepChem Multimodal AI */}
             <div className="p-6 border-t md:border-l border-inherit flex items-center justify-center">
               <div className="flex items-center gap-2 text-xl sm:text-2xl font-black tracking-tight">
-                <Sparkles className="w-5 h-5 text-purple-400" />
-                <span>Gemini Live AI</span>
+                <Sparkles className="w-5 h-5 text-orange-500" />
+                <span>DeepChem Live AI</span>
               </div>
             </div>
 

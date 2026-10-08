@@ -12,7 +12,7 @@ const RESEARCH_EXPERIENCES = [
     positions: [
       {
         id: 'pos-1',
-        title: 'Lead Scientific AI Architect · Multimodal Gemini Chemistry Engine',
+        title: 'Lead Scientific AI Architect · Multimodal DeepChem Foundation Engine',
         employmentPeriod: {
           start: '01.2025',
         },
@@ -26,7 +26,7 @@ const RESEARCH_EXPERIENCES = [
           'RDKit WASM',
           'MMFF94 Force Field',
           'Three.js WebGL',
-          'Gemini 2.0 AI',
+          'DeepChem LLM',
           'FTIR / NMR Deconvolution',
           'Cloud Firestore'
         ],

@@ -56,6 +56,8 @@ import {
 } from '../services/chemicalGraph';
 import { logActivity } from '../services/activityStore';
 import { recordDownload } from '../services/downloadsManager';
+import DownloadTransactionMenu from './common/DownloadTransactionMenu';
+import ChevronsUpDownIcon from './ui/ChevronsUpDownIcon';
 
 // Bond Definitions
 const BOND_DEFINITIONS = [
@@ -1718,27 +1720,44 @@ export default function ChemDrawStudio() {
           >
             <Upload className="w-3.5 h-3.5" /> Import
           </button>
-          <button
-            onClick={() => {
-              const mol = exportToMolfileV2000(atoms, bonds);
-              const blob = new Blob([mol], { type: 'chemical/x-mdl-molfile' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'structure.mol';
-              a.click();
-              recordDownload({
-                filename: 'structure.mol',
-                fileType: 'mol',
-                sourceModule: 'ChemDraw',
-                contentBlob: mol,
-                fileSize: blob.size
-              });
+          <DownloadTransactionMenu
+            title="Export / Download"
+            filenameBase={`chemspace_${computeHillFormula(atoms) || 'molecule'}`}
+            sourceModule="ChemDraw Studio"
+            formats={[
+              { id: 'mol', label: 'MDL Molfile (.mol)', ext: 'mol', mime: 'chemical/x-mdl-molfile', icon: FileCode },
+              { id: 'smi', label: 'SMILES File (.smi)', ext: 'smi', mime: 'text/plain', icon: FileText },
+              { id: 'json', label: 'Chemical Graph JSON (.json)', ext: 'json', mime: 'application/json', icon: Database },
+              { id: 'png', label: 'Canvas Raster (.png)', ext: 'png', mime: 'image/png', icon: Image },
+            ]}
+            getData={async (formatId) => {
+              if (formatId === 'mol') {
+                return exportToMolfileV2000(atoms, bonds);
+              }
+              if (formatId === 'smi') {
+                return generateGraphSMILES(atoms, bonds);
+              }
+              if (formatId === 'json') {
+                return {
+                  formula: computeHillFormula(atoms),
+                  molecularWeight: computeMolecularWeight(atoms),
+                  exactMass: computeExactMass(atoms),
+                  smiles: generateGraphSMILES(atoms, bonds),
+                  atoms,
+                  bonds,
+                  descriptors: computePhysicochemicalDescriptors(atoms, bonds),
+                  timestamp: new Date().toISOString()
+                };
+              }
+              if (formatId === 'png' && canvasRef.current) {
+                return new Promise((resolve) => {
+                  canvasRef.current.toBlob((blob) => resolve(blob), 'image/png');
+                });
+              }
+              return exportToMolfileV2000(atoms, bonds);
             }}
-            className="btn-orange px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5"
-          >
-            <Download className="w-3.5 h-3.5" /> Export MDL
-          </button>
+            buttonVariant="orange"
+          />
         </div>
       </header>
 

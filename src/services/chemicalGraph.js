@@ -148,9 +148,10 @@ export function getBondOrderValue(type, explicitOrder) {
  * Calculates current covalent bond sum on an atom.
  */
 export function getAtomBondSum(atomId, bonds) {
+  if (!atomId || !Array.isArray(bonds)) return 0;
   return bonds
-    .filter((b) => b.from === atomId || b.to === atomId)
-    .reduce((sum, b) => sum + getBondOrderValue(b.type, b.order), 0);
+    .filter((b) => b && (b.from === atomId || b.to === atomId))
+    .reduce((sum, b) => sum + getBondOrderValue(b?.type, b?.order), 0);
 }
 
 /**
@@ -158,7 +159,11 @@ export function getAtomBondSum(atomId, bonds) {
  */
 export function calculateImplicitHydrogens(atoms, bonds) {
   const hCounts = {};
+  if (!Array.isArray(atoms)) return hCounts;
+  const safeBonds = Array.isArray(bonds) ? bonds : [];
+
   atoms.forEach((atom) => {
+    if (!atom || !atom.id) return;
     const el = atom.element || 'C';
     const charge = atom.charge || 0;
     const allowedValences = STANDARD_VALENCES[el];
@@ -168,9 +173,9 @@ export function calculateImplicitHydrogens(atoms, bonds) {
       return;
     }
 
-    const currentBondSum = getAtomBondSum(atom.id, bonds);
+    const currentBondSum = getAtomBondSum(atom.id, safeBonds);
     // Find smallest valid valence >= currentBondSum (adjusted for charge)
-    const targetValence = allowedValences.find((v) => v + charge >= currentBondSum) || allowedValences[allowedValences.length - 1] + charge;
+    const targetValence = allowedValences.find((v) => v + charge >= currentBondSum) || ((allowedValences[allowedValences.length - 1] || 4) + charge);
 
     hCounts[atom.id] = Math.max(0, Math.round(targetValence - currentBondSum));
   });

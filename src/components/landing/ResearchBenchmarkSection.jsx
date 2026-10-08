@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ExternalLink, CheckCircle, HelpCircle, ChevronDown, BarChart3, Sparkles } from 'lucide-react';
+import { ExternalLink, CheckCircle, HelpCircle, BarChart3, Sparkles } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import ChevronsUpDownIcon from '../ui/ChevronsUpDownIcon';
 
 const BENCHMARK_DATA = {
   'ChemBench-2026': {
@@ -116,7 +117,7 @@ export default function ResearchBenchmarkSection() {
                 >
                   <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
                   <span className="font-semibold">{selectedBenchmark}</span>
-                  <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-2" />
+                  <ChevronsUpDownIcon open={dropdownOpen} duration={0.25} className="w-3.5 h-3.5 text-orange-500 ml-2" />
                 </button>
 
                 {dropdownOpen && (

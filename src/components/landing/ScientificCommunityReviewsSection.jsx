@@ -66,7 +66,7 @@ export const REVIEWS_ROW_1 = [
     authorAvatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=160&q=80',
     authorName: 'David Chen, PhD',
     authorTagline: 'Staff AI Chemist · Broad Institute',
-    quote: 'Gemini AI molecular reasoning combined with NIST spectroscopy lookup gives us instant verified reference spectra for unknown intermediate verification.',
+    quote: 'ChemSpace DeepChem AI molecular reasoning combined with NIST spectroscopy lookup gives us instant verified reference spectra for unknown intermediate verification.',
     domain: 'NIST Spectroscopy',
     rating: 5,
     verified: true
@@ -123,7 +123,7 @@ export const REVIEWS_ROW_2 = [
     authorAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=160&q=80',
     authorName: 'Prof. Amara Osei',
     authorTagline: 'Biochemistry Research Fellow · Cambridge',
-    quote: 'The spectroscopy analysis tools along with live Gemini chemical intelligence make this an indispensable workbench for our research cohort.',
+    quote: 'The spectroscopy analysis tools along with live ChemSpace DeepChem intelligence make this an indispensable workbench for our research cohort.',
     domain: 'AI Chemical Analysis',
     rating: 5,
     verified: true

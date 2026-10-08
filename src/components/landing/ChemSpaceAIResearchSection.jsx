@@ -131,7 +131,7 @@ export default function ChemSpaceAIResearchSection() {
 
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-inherit bg-neutral-100 dark:bg-neutral-900 text-neutral-500">
-                GEMINI 2.0 FLASH • RDKIT 2026.03
+                DEEPCHEM LLM v3.8 • RDKIT 2026.03
               </span>
             </div>
           </div>

@@ -49,7 +49,7 @@ const INITIAL_REVIEWS = [
     handle: '@david_broad_inst',
     emoji: '💎',
     role: 'Staff AI Chemist · Broad Institute',
-    quote: 'Gemini AI molecular reasoning paired with NIST spectral archives gives verified answers in seconds.',
+    quote: 'ChemSpace DeepChem AI molecular reasoning paired with NIST spectral archives gives verified answers in seconds.',
     rating: 5
   }
 ];

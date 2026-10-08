@@ -11,6 +11,12 @@
    Inspired by Apple HIG, Material Design 3, and IBM Carbon
    ========================================================================== */
 
+html,
+body,
+#main-scroll-container {
+  scroll-behavior: smooth;
+}
+
 :root,
 html[data-theme="dark"],
 .dark {
@@ -1084,4 +1090,63 @@ html[data-theme="light"] .chemspace-shimmer,
 .animate-marquee-left:hover,
 .animate-marquee-right:hover {
   animation-play-state: paused;
+}
+
+/* Golden Ratio Blueprint & Screen Line Grid Utilities */
+.screen-line-top {
+  position: relative;
+}
+.screen-line-top::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100vw;
+  right: -100vw;
+  height: 1px;
+  background-color: var(--border-subtle);
+  pointer-events: none;
+}
+
+.screen-line-bottom {
+  position: relative;
+}
+.screen-line-bottom::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -100vw;
+  right: -100vw;
+  height: 1px;
+  background-color: var(--border-subtle);
+  pointer-events: none;
+}
+
+.border-line {
+  border-color: var(--border-subtle);
+}
+
+.text-line {
+  color: var(--text-muted);
+}
+
+.text-border {
+  color: var(--accent-orange);
+}
+
+.text-foreground {
+  color: var(--text-primary);
+}
+
+.text-muted-foreground {
+  color: var(--text-secondary);
+}
+
+.bg-background {
+  background-color: var(--bg-page);
+}
+
+.font-heading {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }

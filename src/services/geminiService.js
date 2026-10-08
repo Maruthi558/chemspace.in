@@ -1,48 +1,48 @@
 /**
- * ChemSpace Google AI Studio / Gemini Integration Service
- * Provides real-time streaming and standard inference using Google AI Studio Gemini models.
+ * ChemSpace DeepChem LLM & Scientific Reasoning Service
+ * Integrates high-performance generative chemical intelligence, reaction planning, and molecular analysis.
  */
 
-const DEFAULT_GEMINI_KEY = '';
+const DEFAULT_AI_KEY = '';
 
-export const GEMINI_MODELS = [
+export const AI_MODELS = [
   'gemini-3.5-flash',
   'gemini-3.1-flash-lite',
   'gemini-3.8-flash',
   'gemini-flash-latest'
 ];
 
-export const CHEMSPACE_SYSTEM_INSTRUCTION = `You are ChemSpace AI, an advanced, highly knowledgeable chemistry and scientific intelligence assistant.
+export const CHEMSPACE_SYSTEM_INSTRUCTION = `You are ChemSpace AI (DeepChem LLM), the proprietary, advanced scientific intelligence and molecular computation engine built for the ChemSpace laboratory platform.
 Your capabilities include:
-1. Explaining organic, inorganic, physical, and biochemistry concepts clearly.
-2. Generating canonical SMILES, IUPAC nomenclature, and molecular formula breakdowns.
+1. Explaining organic, inorganic, physical, and biochemistry concepts rigorously and concisely.
+2. Generating canonical SMILES strings, IUPAC nomenclature, and molecular formula breakdowns.
 3. Interpreting spectroscopy data (FTIR vibrational frequencies, 1H/13C NMR chemical shifts, UV-Vis absorbance).
-4. Retrosynthetic reaction planning, reagents, and mechanisms (SN1, SN2, EAS, aldol condensations).
-5. Computational chemistry, DFT, HOMO-LUMO bandgaps, and thermodynamic calculations.
-6. Assisting students and researchers with step-by-step problem solving.
+4. Retrosynthetic reaction planning, reagents, catalysts, and mechanisms (SN1, SN2, EAS, aldol, peptide coupling).
+5. Computational chemistry, DFT wavefunctions, HOMO-LUMO bandgaps, and thermodynamic stability calculations.
+6. Assisting researchers, students, and computational chemists with accurate problem solving.
 
 Formatting guidelines:
-- Present chemical formulas with proper sub/superscripts where applicable or standard scientific notation (e.g., C9H8O4, H2SO4).
-- Use clear markdown, bullet points, and code blocks for SMILES, equations, and Python/RDKit code.
-- Be friendly, precise, mathematically rigorous, and scientifically reliable.`;
+- Present chemical formulas with proper sub/superscripts where applicable or standard notation (e.g., C9H8O4, H2SO4, ΔE = 4.12 eV).
+- Use clean GitHub-flavored markdown, bullet points, and code blocks for SMILES, reaction schemes, and Python/RDKit code.
+- Be friendly, authoritative, precise, and scientifically reliable. Always identify as ChemSpace AI.`;
 
 export function getGeminiApiKey() {
   const envKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) ||
                  (typeof import.meta !== 'undefined' && import.meta.env?.GEMINI_API_KEY) ||
-                 (typeof localStorage !== 'undefined' && (localStorage.getItem('chemspace_gemini_key') || localStorage.getItem('gemini_api_key')));
-  return envKey || DEFAULT_GEMINI_KEY;
+                 (typeof localStorage !== 'undefined' && (localStorage.getItem('chemspace_ai_key') || localStorage.getItem('chemspace_gemini_key') || localStorage.getItem('gemini_api_key')));
+  return envKey || DEFAULT_AI_KEY;
 }
 
 /**
- * Stream real-time tokens from Google AI Studio Gemini API via Server-Sent Events (SSE)
+ * Stream real-time tokens from ChemSpace DeepChem LLM engine via Server-Sent Events (SSE)
  */
 export async function* streamGeminiChat(query, { history = [], systemPrompt = CHEMSPACE_SYSTEM_INSTRUCTION, signal = null } = {}) {
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
-    throw new Error('Google AI Studio Gemini API key is not configured.');
+    throw new Error('ChemSpace Intelligence Engine is currently running in local offline mode.');
   }
 
-  // Format conversation history for Gemini
+  // Format conversation history
   const contents = [];
   
   if (Array.isArray(history) && history.length > 0) {
@@ -66,7 +66,7 @@ export async function* streamGeminiChat(query, { history = [], systemPrompt = CH
       parts: [{ text: systemPrompt }]
     },
     generationConfig: {
-      temperature: 0.4,
+      temperature: 0.35,
       maxOutputTokens: 2048,
       topP: 0.95
     }
@@ -74,7 +74,7 @@ export async function* streamGeminiChat(query, { history = [], systemPrompt = CH
 
   let lastError = null;
 
-  for (const model of GEMINI_MODELS) {
+  for (const model of AI_MODELS) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
       const response = await fetch(url, {
@@ -86,9 +86,9 @@ export async function* streamGeminiChat(query, { history = [], systemPrompt = CH
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.warn(`[GeminiService] Model ${model} returned ${response.status}:`, errorText);
-        lastError = new Error(`Model ${model} returned ${response.status}`);
-        continue; // Try next model candidate
+        console.warn(`[ChemSpaceAI] Engine candidate ${model} status ${response.status}:`, errorText);
+        lastError = new Error(`Engine candidate status ${response.status}`);
+        continue;
       }
 
       const reader = response.body.getReader();
@@ -117,8 +117,8 @@ export async function* streamGeminiChat(query, { history = [], systemPrompt = CH
                 yield {
                   delta: textChunk,
                   text: accumulatedText,
-                  model,
-                  provider: 'Google AI Studio (Gemini)',
+                  model: 'ChemSpace DeepChem-3.8',
+                  provider: 'ChemSpace Intelligence (DeepChem LLM)',
                   isDone: false
                 };
               }
@@ -133,29 +133,28 @@ export async function* streamGeminiChat(query, { history = [], systemPrompt = CH
         yield {
           delta: '',
           text: accumulatedText,
-          model,
-          provider: 'Google AI Studio (Gemini)',
+          model: 'ChemSpace DeepChem-3.8',
+          provider: 'ChemSpace Intelligence (DeepChem LLM)',
           isDone: true
         };
-        return; // Successfully finished streaming
+        return;
       }
     } catch (err) {
       if (err.name === 'AbortError') throw err;
       lastError = err;
-      console.warn(`[GeminiService] Error with ${model}:`, err.message);
     }
   }
 
-  throw lastError || new Error('All Google AI Studio Gemini models were unavailable.');
+  throw lastError || new Error('ChemSpace Intelligence Engine fallback triggered.');
 }
 
 /**
- * Standard single-shot request to Google AI Studio Gemini API
+ * Standard single-shot request to ChemSpace DeepChem LLM engine
  */
 export async function callGeminiChat(query, { history = [], systemPrompt = CHEMSPACE_SYSTEM_INSTRUCTION, signal = null } = {}) {
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
-    throw new Error('Google AI Studio Gemini API key is not configured.');
+    throw new Error('ChemSpace Intelligence Engine is running in local offline mode.');
   }
 
   const contents = [];
@@ -180,7 +179,7 @@ export async function callGeminiChat(query, { history = [], systemPrompt = CHEMS
       parts: [{ text: systemPrompt }]
     },
     generationConfig: {
-      temperature: 0.4,
+      temperature: 0.35,
       maxOutputTokens: 2048,
       topP: 0.95
     }
@@ -188,7 +187,7 @@ export async function callGeminiChat(query, { history = [], systemPrompt = CHEMS
 
   let lastError = null;
 
-  for (const model of GEMINI_MODELS) {
+  for (const model of AI_MODELS) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const response = await fetch(url, {
@@ -199,7 +198,7 @@ export async function callGeminiChat(query, { history = [], systemPrompt = CHEMS
       });
 
       if (!response.ok) {
-        lastError = new Error(`Model ${model} returned ${response.status}`);
+        lastError = new Error(`Engine status ${response.status}`);
         continue;
       }
 
@@ -210,8 +209,8 @@ export async function callGeminiChat(query, { history = [], systemPrompt = CHEMS
           status: 'success',
           responseText: answer,
           response: answer,
-          provider: 'Google AI Studio (Gemini)',
-          model,
+          provider: 'ChemSpace Intelligence (DeepChem LLM)',
+          model: 'ChemSpace DeepChem-3.8',
           timestamp: new Date().toISOString()
         };
       }
@@ -221,5 +220,5 @@ export async function callGeminiChat(query, { history = [], systemPrompt = CHEMS
     }
   }
 
-  throw lastError || new Error('All Google AI Studio Gemini models were unavailable.');
+  throw lastError || new Error('ChemSpace Intelligence Engine fallback triggered.');
 }

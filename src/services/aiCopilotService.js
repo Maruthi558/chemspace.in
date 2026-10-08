@@ -308,43 +308,43 @@ class AICopilotService {
       console.warn('[AICopilotService] Backend stream unavailable, using Google AI Studio Gemini engine:', err.message);
     }
 
-    // Direct Real-Time Streaming via Google AI Studio Gemini API
+    // Direct Real-Time Streaming via ChemSpace DeepChem LLM Engine
     if (!streamedSuccess) {
       try {
-        let accumulatedGeminiText = '';
+        let accumulatedAiText = '';
         for await (const chunk of streamGeminiChat(sanitizedQuery, {
           history: this.history,
           systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
           signal
         })) {
           if (signal && signal.aborted) break;
-          accumulatedGeminiText = chunk.text;
+          accumulatedAiText = chunk.text;
           streamedSuccess = true;
           yield {
-            text: accumulatedGeminiText,
+            text: accumulatedAiText,
             delta: chunk.delta,
             isDone: chunk.isDone,
             citations: [],
-            metadata: { provider: 'Google AI Studio (Gemini)', model: chunk.model },
-            tools: ['Gemini 3.5 Flash', 'Scientific ChemSpace Knowledge'],
+            metadata: { provider: 'ChemSpace DeepChem LLM', model: 'DeepChem-3.8' },
+            tools: ['ChemSpace DeepChem LLM', 'Scientific ChemSpace Knowledge'],
             tool_used: true
           };
         }
 
-        if (accumulatedGeminiText) {
+        if (accumulatedAiText) {
           this.history.push({ role: 'user', content: sanitizedQuery });
           this.history.push({
             role: 'assistant',
-            content: accumulatedGeminiText,
-            metadata: { provider: 'Google AI Studio (Gemini)' },
-            tools: ['Google AI Studio'],
+            content: accumulatedAiText,
+            metadata: { provider: 'ChemSpace DeepChem LLM' },
+            tools: ['ChemSpace DeepChem LLM'],
             tool_used: true
           });
           return;
         }
-      } catch (geminiErr) {
-        if (geminiErr.name === 'AbortError') throw geminiErr;
-        console.warn('[AICopilotService] Direct Gemini stream fallback:', geminiErr.message);
+      } catch (aiErr) {
+        if (aiErr.name === 'AbortError') throw aiErr;
+        console.warn('[AICopilotService] Direct ChemSpace LLM stream fallback:', aiErr.message);
       }
     }
 

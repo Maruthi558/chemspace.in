@@ -27,6 +27,8 @@ import { calculateFullSpectroscopyDossier } from '../services/spectroscopyEngine
 import { logActivity } from '../services/activityStore';
 import ButtonSpinner from './common/ButtonSpinner';
 import SpectroscopyWaveChart from './spectroscopy/SpectroscopyWaveChart';
+import ChevronsUpDownIcon from './ui/ChevronsUpDownIcon';
+import DownloadTransactionMenu from './common/DownloadTransactionMenu';
 
 // Curated reference library of benchmark molecules for quick 1-click spectroscopy testing
 const PRESET_MOLECULES = [
@@ -227,22 +229,53 @@ export default function SpectroscopySuite() {
             <span className="opacity-70 font-normal">({dossier.metadata.formula})</span>
           </div>
 
-          <button
-            onClick={handleExportJson}
-            className="btn-horizontal btn-secondary text-xs"
-            title="Export full spectroscopy dossier in JSON format"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export JSON</span>
-          </button>
+          <DownloadTransactionMenu
+            title="Download / Export"
+            filenameBase={`spectroscopy_${dossier?.metadata?.name?.toLowerCase() || 'dossier'}`}
+            sourceModule="Spectroscopy Suite"
+            formats={[
+              { id: 'json', label: 'Full Spectroscopy Dossier (.json)', ext: 'json', mime: 'application/json' },
+              { id: 'csv', label: 'Spectra Peaks Dataset (.csv)', ext: 'csv', mime: 'text/csv' },
+              { id: 'smi', label: 'SMILES Molecule File (.smi)', ext: 'smi', mime: 'text/plain' }
+            ]}
+            getData={async (formatId) => {
+              if (formatId === 'json') {
+                return dossier;
+              }
+              if (formatId === 'csv') {
+                let csv = 'Technique,Peak/Shift,Assignment,Intensity/Multiplicity\n';
+                if (dossier.ir?.peaks) {
+                  dossier.ir.peaks.forEach(p => {
+                    csv += `FT-IR,${p.cm},"${p.assignment}",${p.intensity}\n`;
+                  });
+                }
+                if (dossier.nmr?.peaks1H) {
+                  dossier.nmr.peaks1H.forEach(p => {
+                    csv += `1H-NMR,${p.ppm},"${p.assignment}",${p.mult || ''} (${p.integral}H)\n`;
+                  });
+                }
+                if (dossier.nmr?.peaks13C) {
+                  dossier.nmr.peaks13C.forEach(p => {
+                    csv += `13C-NMR,${p.ppm},"${p.assignment}",${p.type || ''}\n`;
+                  });
+                }
+                return csv;
+              }
+              if (formatId === 'smi') {
+                return `${dossier.metadata?.smiles || smilesInput} ${dossier.metadata?.name || 'Molecule'}\n`;
+              }
+              return dossier;
+            }}
+            buttonVariant="orange"
+          />
 
           <button
             onClick={handleDownloadPdfReport}
-            className="btn-horizontal btn-primary text-xs"
+            className="btn-horizontal btn-secondary text-xs"
             title="Download Print-Ready Scientific Laboratory Report"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Download Report</span>
+            <span>Print Report</span>
           </button>
         </div>
       </div>
@@ -715,7 +748,7 @@ export default function SpectroscopySuite() {
               Scientific Principles &amp; Diagnostic Spectral Regions Guide
             </span>
           </div>
-          {showTheoryGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          <ChevronsUpDownIcon open={showTheoryGuide} duration={0.25} className="w-4 h-4 text-orange-500" />
         </button>
 
         {showTheoryGuide && (

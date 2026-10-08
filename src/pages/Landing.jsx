@@ -33,13 +33,14 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import ScientificLayeredBackground from '../components/landing/ScientificLayeredBackground';
 import ChemSpaceLogo from '../components/ChemSpaceLogo';
-import BlueprintGridHero from '../components/landing/BlueprintGridHero';
+import Hero01 from '../components/landing/Hero01';
 import ResearchBenchmarkSection from '../components/landing/ResearchBenchmarkSection';
 import ChemSpaceAIResearchSection from '../components/landing/ChemSpaceAIResearchSection';
 import ScientificCommunityReviewsSection from '../components/landing/ScientificCommunityReviewsSection';
 import ScientificResearchArticlesSection from '../components/landing/ScientificResearchArticlesSection';
 import ChemicalIntelligenceMilestones from '../components/landing/ChemicalIntelligenceMilestones';
 import FluidGradientTextShowcase from '../components/landing/FluidGradientTextShowcase';
+import ChemSpaceVideoTourRoadmap from '../components/landing/ChemSpaceVideoTourRoadmap';
 
 /**
  * SCIENTIFIC_MODULES
@@ -186,31 +187,31 @@ export default function Landing() {
 
   return (
     <div className="w-full min-h-screen relative select-none bg-transparent text-[var(--home-text-primary)] overflow-x-hidden font-sans">
-      {/* 1. ARCHITECTURAL CAD BLUEPRINT HERO & FLOATING ISLAND NAVBAR (Exact Bklit UI Architecture) */}
-      <BlueprintGridHero />
+      {/* 1. GOLDEN SPIRAL MATHEMATICAL HERO (Hero01 Architecture) */}
+      <Hero01 />
 
       {/* Main Content Workspace Container */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-16 sm:space-y-24">
+      <div id="workbench-modules" className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-16 sm:space-y-24">
 
         {/* ───────────────────────────────────────────────────────────────────────
-            2. HERO & WORKBENCH OVERVIEW (DESKTOP-CLASS SCIENTIFIC SOFTWARE)
+            2. SCIENTIFIC WORKBENCH & ANALYTICAL CAPABILITIES
            ─────────────────────────────────────────────────────────────────────── */}
-        <section className="space-y-8 pt-2 sm:pt-4">
-          <div className="flex flex-col lg:flex-row items-stretch justify-between gap-8 border-b border-[var(--home-border)] pb-10">
+        <section className="space-y-8 pt-2">
+          <div className="flex flex-col lg:flex-row items-stretch justify-between gap-8 border-b border-[var(--home-border)] pb-8">
             
             {/* Left: Scientific Proposition & Desktop Controls */}
             <div className="space-y-4 max-w-2xl flex-1 flex flex-col justify-center">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono border border-[var(--home-border)] bg-[var(--home-surface-subtle)] text-[var(--home-text-secondary)] shadow-sm self-start">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>ChemSpace Molecular Engine • Professional Chemistry Suite</span>
+                <span>Certified Precision Lab Workstation</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[var(--home-text-primary)] leading-tight">
-                Chemical Computing &amp; Molecular Studio
-              </h1>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[var(--home-text-primary)] leading-tight">
+                Integrated Molecular Laboratory Workbench
+              </h2>
 
               <p className="text-xs sm:text-sm text-[var(--home-text-secondary)] leading-relaxed font-sans max-w-xl">
-                An integrated desktop-class scientific environment for 2D/3D structure drafting, RDKit physicochemical descriptors, quantum electronic orbital modeling, spectroscopy prediction, and retrosynthetic route planning.
+                A desktop-grade scientific workbench translating experimental analytical measurements into computational descriptors. Draw 2D/3D structures, calculate RDKit properties, compute quantum wavefunctions, and deconvolve spectroscopy in real-time.
               </p>
 
               {/* Tactile Desktop Software Action Controls */}
@@ -229,7 +230,7 @@ export default function Landing() {
                   className="btn-secondary group py-2.5 px-4 text-xs uppercase tracking-wider font-bold flex items-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
                   <Cpu className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>RDKit Lab</span>
+                  <span>RDKit Descriptors</span>
                   <ChevronRight className="w-3 h-3 text-[var(--home-text-muted)] arrow-micro" />
                 </button>
 
@@ -238,14 +239,14 @@ export default function Landing() {
                   className="btn-outline group py-2.5 px-4 text-xs uppercase tracking-wider font-bold flex items-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
                   <FolderLock className="w-3.5 h-3.5 text-[var(--home-text-secondary)]" />
-                  <span>Workspace</span>
+                  <span>Lab Records</span>
                   <ChevronRight className="w-3 h-3 text-[var(--home-text-muted)] arrow-micro" />
                 </button>
               </div>
             </div>
 
             {/* Right: Analytical Chemistry Laboratory Workstation */}
-            <div className="relative w-full lg:w-[460px] h-[300px] sm:h-[340px] rounded-2xl border border-[var(--home-border)] bg-[var(--home-surface-card)] overflow-hidden shadow-lg flex items-center justify-center group">
+            <div className="relative w-full lg:w-[460px] h-[260px] sm:h-[300px] rounded-2xl border border-[var(--home-border)] bg-[var(--home-surface-card)] overflow-hidden shadow-lg flex items-center justify-center group">
               <img
                 src="/assets/analytical_workbench.jpg"
                 alt="Analytical Chemistry Research Instrumentation Workstation"
@@ -255,7 +256,7 @@ export default function Landing() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent pointer-events-none" />
               <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-lg bg-black/75 backdrop-blur-md border border-white/10 text-white text-[10px] font-mono flex items-center gap-2">
                 <Microscope className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Analytical Instrumentation • ChemSpace Certified Facility</span>
+                <span>Analytical Instrumentation • ChemSpace Facility</span>
               </div>
             </div>
           </div>
@@ -371,6 +372,11 @@ export default function Landing() {
             RESEARCH BENCHMARK & CHEMICAL INTELLIGENCE VISUALIZER
            ─────────────────────────────────────────────────────────────────────── */}
         <ResearchBenchmarkSection />
+
+        {/* ───────────────────────────────────────────────────────────────────────
+            INTERACTIVE VIDEO TOUR & WORKFLOW ROADMAP (Canvas HD + MP4 Export)
+           ─────────────────────────────────────────────────────────────────────── */}
+        <ChemSpaceVideoTourRoadmap />
 
         {/* ───────────────────────────────────────────────────────────────────────
             4. SCIENTIFIC CAPABILITY METRICS STRIP

@@ -42,6 +42,7 @@ import ScientificWorkspaceBackground from './common/ScientificWorkspaceBackgroun
 import { getRecentActivities } from '../services/activityStore';
 import { logoutUser } from '../services/firebase';
 import { IconSwap, IconSwapItem } from './ui/IconSwap';
+import ScrollNavigationWidget from './common/ScrollNavigationWidget';
 
 const NAV_GROUPS = [
   {
@@ -621,6 +622,9 @@ export default function Layout() {
       {/* Global Modals */}
       {googleModalOpen && <GoogleAuthModal onClose={() => setGoogleModalOpen(false)} />}
       {gesturePanelOpen && <GestureControlPanel isOpen={gesturePanelOpen} onClose={() => setGesturePanelOpen(false)} />}
+
+      {/* Global Upward & Downward Scroll Navigation Toolbar with ChevronsUpDownIcon */}
+      <ScrollNavigationWidget />
     </div>
   );
 }
