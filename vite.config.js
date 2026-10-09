@@ -50,6 +50,37 @@ function spaFallbackPlugin() {
           wranglerConfig.assets = { directory: '.', not_found_handling: 'single-page-application' };
           fs.writeFileSync(distWrangler, JSON.stringify(wranglerConfig, null, 2));
         }
+
+        // Sync full bundle to docs/ folder (supports GitHub Pages Source: master /docs)
+        const docsDir = path.resolve(__dirname, 'docs');
+        fs.cpSync(distDir, docsDir, { recursive: true, force: true });
+
+        // Sync dist/assets to root assets/ and create canonical index.js / index.css entry points
+        // (supports GitHub Pages Source: master / (root) fallback)
+        const distAssetsDir = path.join(distDir, 'assets');
+        const rootAssetsDir = path.resolve(__dirname, 'assets');
+        if (fs.existsSync(distAssetsDir)) {
+          fs.cpSync(distAssetsDir, rootAssetsDir, { recursive: true, force: true });
+          const files = fs.readdirSync(distAssetsDir);
+          const jsEntry = files.find(f => f.startsWith('index-') && f.endsWith('.js'));
+          const cssEntry = files.find(f => f.startsWith('index-') && f.endsWith('.css'));
+
+          if (jsEntry) {
+            fs.copyFileSync(path.join(distAssetsDir, jsEntry), path.join(rootAssetsDir, 'index.js'));
+            fs.copyFileSync(path.join(distAssetsDir, jsEntry), path.join(distAssetsDir, 'index.js'));
+          }
+          if (cssEntry) {
+            fs.copyFileSync(path.join(distAssetsDir, cssEntry), path.join(rootAssetsDir, 'index.css'));
+            fs.copyFileSync(path.join(distAssetsDir, cssEntry), path.join(distAssetsDir, 'index.css'));
+          }
+
+          const manifest = {
+            entry: jsEntry ? `assets/${jsEntry}` : 'assets/index.js',
+            css: cssEntry ? `assets/${cssEntry}` : 'assets/index.css'
+          };
+          fs.writeFileSync(path.join(rootAssetsDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+          fs.writeFileSync(path.join(distAssetsDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+        }
       } catch (err) {
         console.warn('Could not generate SPA fallbacks or deployment artifacts:', err);
       }

@@ -8,7 +8,7 @@ import ChemSpaceLoader from './loading/ChemSpaceLoader';
  * Allows both authenticated users and guest users while preserving the intended location.
  */
 export default function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isGuest, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -22,8 +22,8 @@ export default function ProtectedRoute({ children }) {
     );
   }
 
-  // If not authenticated, redirect to login
-  if (!isAuthenticated) {
+  // If not authenticated and not a guest, redirect to login
+  if (!isAuthenticated && !isGuest) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

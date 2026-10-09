@@ -27,5 +27,24 @@
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script type="module">
+      // GitHub Pages Static Host Fallback:
+      // If loaded on GitHub Pages directly from repository root without Vite dev server,
+      // dynamically load the pre-compiled production assets.
+      if (window.location.hostname.includes('github.io') && !window.__vite_plugin_react_preamble_installed__) {
+        const basePath = window.location.pathname.startsWith('/chemspace.in') ? '/chemspace.in/' : './';
+        const cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.crossOrigin = 'anonymous';
+        cssLink.href = basePath + 'assets/index.css';
+        document.head.appendChild(cssLink);
+
+        const jsScript = document.createElement('script');
+        jsScript.type = 'module';
+        jsScript.crossOrigin = 'anonymous';
+        jsScript.src = basePath + 'assets/index.js';
+        document.body.appendChild(jsScript);
+      }
+    </script>
   </body>
 </html>

@@ -45,17 +45,11 @@ export default function App() {
           <FloatingCameraPreview />
           <GestureTutorialModal />
           <GestureCalibrationModal />
-          <BrowserRouter basename={(import.meta.env.BASE_URL || '/').replace(/\/$/, '') || undefined}>
+          <BrowserRouter basename={typeof window !== 'undefined' && window.location.pathname.startsWith('/chemspace.in') ? '/chemspace.in' : ((import.meta.env.BASE_URL || '/').replace(/\/$/, '') || undefined)}>
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                {/* Protected Workspace Routes */}
-                <Route
-                  element={
-                    <ProtectedRoute>
-                      <Layout />
-                    </ProtectedRoute>
-                  }
-                >
+                {/* Public Scientific Platform Routes */}
+                <Route element={<Layout />}>
                   <Route path="/" element={<Landing />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/chemdraw" element={<ChemDraw />} />
@@ -69,9 +63,32 @@ export default function App() {
                   <Route path="/scientists" element={<ChemistsPage />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/research-projects" element={<ResearchProjects />} />
-                  <Route path="/workspace" element={<UserWorkspace />} />
-                  <Route path="/history" element={<UserWorkspace />} />
-                  <Route path="/settings" element={<Settings />} />
+
+                  {/* Authenticated / Researcher Workspace */}
+                  <Route
+                    path="/workspace"
+                    element={
+                      <ProtectedRoute>
+                        <UserWorkspace />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/history"
+                    element={
+                      <ProtectedRoute>
+                        <UserWorkspace />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <ProtectedRoute>
+                        <Settings />
+                      </ProtectedRoute>
+                    }
+                  />
                 </Route>
 
                 {/* Public Authentication Gateways */}

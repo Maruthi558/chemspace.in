@@ -14,14 +14,23 @@ export default function GlobalInitialLoader() {
   const [unmounted, setUnmounted] = useState(false);
 
   useEffect(() => {
+    // Safety max timeout: never block UI for more than 1.5s under any circumstance
+    const maxTimer = setTimeout(() => {
+      setFading(true);
+      setTimeout(() => setUnmounted(true), 300);
+    }, 1500);
+
     if (!authLoading) {
-      // Start smooth fade-out as soon as real auth state is resolved
       setFading(true);
       const timer = setTimeout(() => {
         setUnmounted(true);
       }, 300);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(maxTimer);
+      };
     }
+    return () => clearTimeout(maxTimer);
   }, [authLoading]);
 
   if (unmounted) return null;
