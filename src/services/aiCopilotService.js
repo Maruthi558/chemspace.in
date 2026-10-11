@@ -866,13 +866,7 @@ class AICopilotService {
     this.stopSpeaking();
     this.isListening = true;
 
-    if (preferredLang === 'te') {
-      this.recognition.lang = 'te-IN';
-    } else if (preferredLang === 'hi') {
-      this.recognition.lang = 'hi-IN';
-    } else {
-      this.recognition.lang = 'en-US';
-    }
+    this.recognition.lang = 'en-US';
 
     this.recognition.onresult = (event) => {
       let interim = '';
@@ -890,22 +884,22 @@ class AICopilotService {
       const correctedInterim = this.sanitizeVoiceTranscript(interim);
       const correctedFinal = this.sanitizeVoiceTranscript(final);
 
-      if (correctedInterim && onInterimResult) {
+      if (correctedInterim && typeof onInterimResult === 'function') {
         onInterimResult(correctedInterim);
       }
-      if (correctedFinal && onFinalResult) {
+      if (correctedFinal && typeof onFinalResult === 'function') {
         onFinalResult(correctedFinal);
       }
     };
 
     this.recognition.onerror = (event) => {
       this.isListening = false;
-      if (onError) onError(event.error);
+      if (typeof onError === 'function') onError(event.error);
     };
 
     this.recognition.onend = () => {
       this.isListening = false;
-      if (onEnd) onEnd();
+      if (typeof onEnd === 'function') onEnd();
     };
 
     try {

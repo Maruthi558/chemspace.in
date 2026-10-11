@@ -274,7 +274,10 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
         setMicState('idle');
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       },
-      'en-US'
+      () => {
+        setMicState('idle');
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      }
     );
   };
 
