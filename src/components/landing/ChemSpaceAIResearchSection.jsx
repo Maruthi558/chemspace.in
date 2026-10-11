@@ -23,7 +23,7 @@ import {
   FlaskConical
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { streamGeminiChat } from '../../services/geminiService';
+import { streamScientificSearch, synthesizeChemicalAnalysis } from '../../services/webSearchService';
 import FormattedAIResponse from '../common/FormattedAIResponse';
 import AIThinkingIndicator from '../common/AIThinkingIndicator';
 
@@ -59,29 +59,24 @@ export default function ChemSpaceAIResearchSection() {
     setSearchResults({ query: q, text: '', sources: [] });
 
     try {
-      let accumulatedText = '';
-      for await (const chunk of streamGeminiChat(`[Mode: ${activeTab.toUpperCase()}] Molecular Query: ` + q, { signal: controller.signal })) {
+      for await (const chunk of streamScientificSearch(q, activeTab, { signal: controller.signal })) {
         if (controller.signal.aborted) break;
-        accumulatedText = chunk.text;
-        setSearchResults({
-          query: q,
-          text: accumulatedText,
-          sources: [
-            { title: 'PubChem BioAssay & Structural Conformational Data', url: 'https://pubchem.ncbi.nlm.nih.gov', domain: 'pubchem.ncbi.nlm.nih.gov' },
-            { title: 'NIST Chemistry WebBook & Infrared Spectral Archive', url: 'https://webbook.nist.gov', domain: 'webbook.nist.gov' },
-            { title: 'ChemSpace Real-Time Molecular Index & RDKit Descriptors', url: 'https://chemspace.in', domain: 'chemspace.in' }
-          ]
-        });
+        if (chunk.text) {
+          setSearchResults({
+            query: q,
+            text: chunk.text,
+            sources: chunk.sources || []
+          });
+        }
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
+        console.warn('[ChemSpaceAIResearchSection] Live stream caught error, synthesizing fallback:', err);
+        const fallback = synthesizeChemicalAnalysis(q, activeTab);
         setSearchResults({
           query: q,
-          text: `**ChemSpace Live Chemical Analysis:**\n\n**Query Target:** ${q}\n\n1. **Retrosynthetic Disconnection:** Cleavage of the aryl-fluoride C-F bond requires nucleophilic aromatic substitution (S_NAr) with anhydrous CsF or transition-metal-catalyzed fluorination (Pd/RuPhos catalyst).\n2. **Canonical SMILES:** \`Fc1ccccc1C(=O)O\` (2-Fluorobenzoic acid)\n3. **Physicochemical Properties:** MW: 140.11 g/mol • LogP: 1.48 • TPSA: 37.3 Å² • H-Bond Donors: 1 • H-Bond Acceptors: 2\n4. **Spectroscopic Signature:** Strong 19F NMR singlet at -112.4 ppm; FTIR C-F stretch at 1220 cm⁻¹.`,
-          sources: [
-            { title: 'PubChem Compound Index (Fluorinated Aromatics)', url: 'https://pubchem.ncbi.nlm.nih.gov', domain: 'pubchem.ncbi.nlm.nih.gov' },
-            { title: 'NIST FTIR Standard Spectral Collection', url: 'https://webbook.nist.gov', domain: 'webbook.nist.gov' }
-          ]
+          text: fallback.text,
+          sources: fallback.sources
         });
       }
     } finally {

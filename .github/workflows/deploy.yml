@@ -38,6 +38,9 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           GITHUB_ACTIONS: 'true'
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_TAVILY_API_KEY: ${{ secrets.VITE_TAVILY_API_KEY }}
+          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

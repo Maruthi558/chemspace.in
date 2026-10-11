@@ -33,6 +33,8 @@ import { getUserPreferences, saveUserPreferences } from '../services/userPrefere
 import { fetchUserDownloads, triggerFileDownload, deleteDownloadRecord, clearDownloadsHistory, formatBytes } from '../services/downloadsManager';
 import { fetchUserWorkspaceHistory, deleteUserWorkspaceItem, clearUserWorkspaceHistory, fetchUserAuditLogs } from '../services/workspaceApi';
 import { getSavedScientistProfile, saveScientistProfile } from '../services/firebase';
+import { getGeminiApiKey, setCustomGeminiApiKey } from '../services/geminiService';
+import { getTavilyApiKey, setCustomTavilyApiKey } from '../services/webSearchService';
 
 const CATEGORIES = [
   { id: 'profile', label: 'PROFILE', icon: User },
@@ -59,6 +61,19 @@ export default function Settings() {
   // User Preferences
   const [prefs, setPrefs] = useState(getUserPreferences());
   const [saveStatus, setSaveStatus] = useState('');
+
+  // API Keys state for Google Gemini & Tavily Web Search
+  const [geminiKeyInput, setGeminiKeyInput] = useState(() => getGeminiApiKey() || '');
+  const [tavilyKeyInput, setTavilyKeyInput] = useState(() => getTavilyApiKey() || '');
+  const [apiKeySaveStatus, setApiKeySaveStatus] = useState('');
+
+  const handleSaveApiKeys = (e) => {
+    e.preventDefault();
+    setCustomGeminiApiKey(geminiKeyInput);
+    setCustomTavilyApiKey(tavilyKeyInput);
+    setApiKeySaveStatus('API Keys updated successfully!');
+    setTimeout(() => setApiKeySaveStatus(''), 2500);
+  };
 
   // Profile data
   const [profile, setProfile] = useState(() => getSavedScientistProfile());
@@ -480,6 +495,102 @@ export default function Settings() {
                     onChange={(e) => handleUpdatePref({ webSearchEnabled: e.target.checked })}
                     className="w-4 h-4 accent-emerald-500 cursor-pointer"
                   />
+                </div>
+
+                {/* API Key Configuration Cards (Google Gemini & Tavily) */}
+                <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-xs uppercase tracking-wider text-orange-500">API Keys &amp; Intelligence Engines</div>
+                      <div className="text-[10px] text-neutral-400">Configure keys for deployed sites &amp; custom quotas</div>
+                    </div>
+                    {apiKeySaveStatus && (
+                      <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 animate-in fade-in">
+                        <Check className="w-3 h-3" /> {apiKeySaveStatus}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Google Gemini API Key Input */}
+                  <div className="p-3.5 rounded-2xl border border-neutral-200 dark:border-neutral-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-xs flex items-center gap-2">
+                        <span>Google Gemini API Key</span>
+                        <span className={`w-2 h-2 rounded-full ${geminiKeyInput ? 'bg-emerald-500' : 'bg-neutral-500'}`} />
+                      </label>
+                      <a
+                        href="https://aistudio.google.com/app/apikey"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-orange-400 hover:underline flex items-center gap-1"
+                      >
+                        Get Key <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                    <input
+                      type="password"
+                      value={geminiKeyInput}
+                      onChange={(e) => setGeminiKeyInput(e.target.value)}
+                      placeholder="AIzaSy... (leave blank to use system defaults)"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 font-mono outline-none focus:border-orange-500"
+                    />
+                    <p className="text-[9px] text-neutral-400">
+                      Powers ChemSpace DeepChem reasoning and multilingual chemical chat across all devices.
+                    </p>
+                  </div>
+
+                  {/* Tavily Web Search Key Input */}
+                  <div className="p-3.5 rounded-2xl border border-neutral-200 dark:border-neutral-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-xs flex items-center gap-2">
+                        <span>Tavily Academic Web Search Key</span>
+                        <span className={`w-2 h-2 rounded-full ${tavilyKeyInput ? 'bg-emerald-500' : 'bg-neutral-500'}`} />
+                      </label>
+                      <a
+                        href="https://tavily.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-orange-400 hover:underline flex items-center gap-1"
+                      >
+                        Get Key <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                    <input
+                      type="password"
+                      value={tavilyKeyInput}
+                      onChange={(e) => setTavilyKeyInput(e.target.value)}
+                      placeholder="tvly-dev-... (leave blank to use verified active key)"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 font-mono outline-none focus:border-orange-500"
+                    />
+                    <p className="text-[9px] text-neutral-400">
+                      Enables live chemical web literature searching, peer-reviewed citation gathering, and real-time research.
+                    </p>
+                  </div>
+
+                  {/* Save API Keys Button */}
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGeminiKeyInput('');
+                        setTavilyKeyInput('');
+                        setCustomGeminiApiKey('');
+                        setCustomTavilyApiKey('');
+                        setApiKeySaveStatus('Keys reset to defaults');
+                        setTimeout(() => setApiKeySaveStatus(''), 2500);
+                      }}
+                      className="px-3 py-1.5 rounded-xl text-[11px] font-mono border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition"
+                    >
+                      Reset Defaults
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveApiKeys}
+                      className="px-4 py-1.5 rounded-xl text-[11px] font-mono font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-md transition"
+                    >
+                      Save API Keys
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
