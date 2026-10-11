@@ -187,7 +187,7 @@ export default function ChemistryCard({ data, onAnalyze }) {
     try {
       localStorage.setItem('chemspace_active_mol', JSON.stringify({ smiles, name }));
     } catch (e) {}
-    navigate('/chemdraw');
+    navigate(smiles ? `/chemdraw?smiles=${encodeURIComponent(smiles)}` : '/chemdraw');
   };
 
   const handleAnalyzeRDKit = () => {
@@ -197,7 +197,7 @@ export default function ChemistryCard({ data, onAnalyze }) {
       try {
         localStorage.setItem('chemspace_active_mol', JSON.stringify({ smiles, name }));
       } catch (e) {}
-      navigate('/rdkit-lab');
+      navigate(smiles ? `/rdkit-lab?smiles=${encodeURIComponent(smiles)}` : '/rdkit-lab');
     }
   };
 

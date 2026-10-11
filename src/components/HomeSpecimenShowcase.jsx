@@ -450,14 +450,24 @@ export default function HomeSpecimenShowcase() {
           {/* Direct Workbench Launch Triggers */}
           <div className="flex flex-wrap items-center gap-2.5 pt-1">
             <button
-              onClick={() => navigate(`/chemdraw`)}
+              onClick={() => {
+                try {
+                  localStorage.setItem('chemspace_active_mol', JSON.stringify({ smiles: currentMolecule.smiles, name: currentMolecule.name }));
+                } catch (e) {}
+                navigate(`/chemdraw?smiles=${encodeURIComponent(currentMolecule.smiles)}`);
+              }}
               className="btn-horizontal btn-primary text-xs font-bold flex-1"
             >
               <PenTool className="w-3.5 h-3.5" />
               <span>Open in ChemDraw CAD</span>
             </button>
             <button
-              onClick={() => navigate(`/rdkit-lab`)}
+              onClick={() => {
+                try {
+                  localStorage.setItem('chemspace_active_mol', JSON.stringify({ smiles: currentMolecule.smiles, name: currentMolecule.name }));
+                } catch (e) {}
+                navigate(`/rdkit-lab?smiles=${encodeURIComponent(currentMolecule.smiles)}`);
+              }}
               className="btn-horizontal btn-secondary text-xs font-bold flex-1"
             >
               <Cpu className="w-3.5 h-3.5 text-emerald-500" />

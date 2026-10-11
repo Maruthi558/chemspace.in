@@ -55,7 +55,7 @@ export default function UserWorkspace() {
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
 
-  const [activeTab, setActiveTab] = useState('ai'); // 'ai' | 'history' | 'downloads'
+  const [activeTab, setActiveTab] = useState('history'); // 'history' | 'downloads' | 'ai'
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('newest');
@@ -140,37 +140,48 @@ export default function UserWorkspace() {
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex items-center p-1 rounded-2xl inner-box font-mono text-xs shadow-inner">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center p-1 rounded-2xl inner-box font-mono text-xs shadow-inner">
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                activeTab === 'history'
+                  ? 'bg-orange-500 text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              Activity History
+            </button>
+            <button
+              onClick={() => setActiveTab('downloads')}
+              className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                activeTab === 'downloads'
+                  ? 'bg-orange-500 text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              Downloads Manager
+            </button>
+            <button
+              onClick={() => setActiveTab('ai')}
+              className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'ai'
+                  ? 'bg-orange-500 text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Workspace Copilot</span>
+            </button>
+          </div>
+
           <button
-            onClick={() => setActiveTab('ai')}
-            className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'ai'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
+            onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-copilot'))}
+            className="px-3.5 py-1.5 rounded-2xl border border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 font-bold font-mono text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-95"
+            title="Launch Floating ChemSpace AI Window"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>ChemSpace AI</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-              activeTab === 'history'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            Activity History
-          </button>
-          <button
-            onClick={() => setActiveTab('downloads')}
-            className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-              activeTab === 'downloads'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            Downloads Manager
+            <Bot className="w-3.5 h-3.5 text-orange-400" />
+            <span>Launch Floating AI</span>
           </button>
         </div>
       </div>

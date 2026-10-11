@@ -43,6 +43,7 @@ import { getRecentActivities } from '../services/activityStore';
 import { logoutUser } from '../services/firebase';
 import { IconSwap, IconSwapItem } from './ui/IconSwap';
 import ScrollNavigationWidget from './common/ScrollNavigationWidget';
+import CopilotWindow from './AICopilot/CopilotWindow';
 
 const NAV_GROUPS = [
   {
@@ -230,6 +231,15 @@ export default function Layout() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setAiModalOpen(true)}
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-orange-400 border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 transition cursor-pointer"
+            aria-label="Open ChemSpace AI"
+            title="Open ChemSpace AI"
+          >
+            <Sparkles className="w-4 h-4" />
+          </button>
+
           <button
             onClick={toggleTheme}
             className="w-9 h-9 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] transition relative overflow-hidden will-change-transform"
@@ -572,6 +582,15 @@ export default function Layout() {
               <span>Vision Controls</span>
             </button>
 
+            <button
+              onClick={() => setAiModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg border border-orange-500/40 bg-gradient-to-r from-orange-500/15 via-amber-500/15 to-orange-500/15 hover:from-orange-500/25 hover:to-amber-500/25 text-[11px] font-mono font-bold text-orange-400 hover:text-orange-300 transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+              title="Open ChemSpace AI Copilot"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+              <span>ChemSpace AI</span>
+            </button>
+
             {/* Top Header Login / Logout Authentication Pill */}
             {user ? (
               <div className="flex items-center gap-2 pl-1.5 border-l border-[var(--border-subtle)]">
@@ -619,9 +638,16 @@ export default function Layout() {
         </main>
       </div>
 
-      {/* Global Modals */}
+      {/* Global Modals & AI Copilot */}
       {googleModalOpen && <GoogleAuthModal onClose={() => setGoogleModalOpen(false)} />}
       {gesturePanelOpen && <GestureControlPanel isOpen={gesturePanelOpen} onClose={() => setGesturePanelOpen(false)} />}
+
+      {/* ChemSpace AI Copilot Window & Floating Launcher */}
+      <CopilotWindow
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        onOpen={() => setAiModalOpen(true)}
+      />
 
       {/* Global Upward & Downward Scroll Navigation Toolbar with ChevronsUpDownIcon */}
       <ScrollNavigationWidget />

@@ -42,6 +42,11 @@ import ChemicalIntelligenceMilestones from '../components/landing/ChemicalIntell
 import FluidGradientTextShowcase from '../components/landing/FluidGradientTextShowcase';
 import ChemSpaceVideoTourRoadmap from '../components/landing/ChemSpaceVideoTourRoadmap';
 
+const assetUrl = (path) => {
+  const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+  return `${base}/${path.replace(/^\//, '')}`;
+};
+
 /**
  * SCIENTIFIC_MODULES
  * Each module carries a dedicated scientific personality, architectural watermark,
@@ -248,7 +253,7 @@ export default function Landing() {
             {/* Right: Analytical Chemistry Laboratory Workstation */}
             <div className="relative w-full lg:w-[460px] h-[260px] sm:h-[300px] rounded-2xl border border-[var(--home-border)] bg-[var(--home-surface-card)] overflow-hidden shadow-lg flex items-center justify-center group">
               <img
-                src="/assets/analytical_workbench.jpg"
+                src={assetUrl('assets/analytical_workbench.jpg')}
                 alt="Analytical Chemistry Research Instrumentation Workstation"
                 className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-102"
                 loading="eager"
@@ -262,8 +267,9 @@ export default function Landing() {
           </div>
 
           {/* Quick Access Tool Strip with Tactile Feature Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
             {[
+              { label: 'ChemSpace AI', action: 'copilot', icon: Sparkles, desc: 'Chemical Intelligence & Voice', badge: 'AI', highlight: true },
               { label: 'ChemDraw CAD', path: '/chemdraw', icon: PenTool, desc: '2D/3D Molecular Sketch', badge: 'CAD' },
               { label: 'RDKit Lab', path: '/rdkit-lab', icon: Cpu, desc: 'Physicochemical Descriptors', badge: 'Ro5' },
               { label: 'Spectroscopy', path: '/spectroscopy', icon: Radio, desc: 'FTIR, UV-Vis & NMR', badge: 'FTIR' },
@@ -275,19 +281,41 @@ export default function Landing() {
               return (
                 <div
                   key={tool.label}
-                  onClick={() => navigate(tool.path)}
-                  className="card-feature-interactive p-3.5 flex flex-col justify-between space-y-2 cursor-pointer group"
+                  onClick={() => {
+                    if (tool.action === 'copilot') {
+                      window.dispatchEvent(new CustomEvent('chemspace-open-copilot'));
+                    } else if (tool.path) {
+                      navigate(tool.path);
+                    }
+                  }}
+                  className={`card-feature-interactive p-3.5 flex flex-col justify-between space-y-2 cursor-pointer group ${
+                    tool.highlight
+                      ? 'border-orange-500/40 bg-orange-500/5 hover:border-orange-500/70 shadow-sm'
+                      : ''
+                  }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="w-8 h-8 rounded-lg bg-[var(--home-surface-subtle)] border border-[var(--home-border)] flex items-center justify-center text-[var(--home-text-primary)] group-hover:border-[var(--home-border-strong)] transition">
-                      <Icon className="w-4 h-4" />
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition ${
+                      tool.highlight
+                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                        : 'bg-[var(--home-surface-subtle)] border border-[var(--home-border)] text-[var(--home-text-primary)] group-hover:border-[var(--home-border-strong)]'
+                    }`}>
+                      <Icon className={`w-4 h-4 ${tool.highlight ? 'animate-pulse' : ''}`} />
                     </div>
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--home-surface-subtle)] text-[var(--home-text-muted)] border border-[var(--home-border)]">
+                    <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+                      tool.highlight
+                        ? 'bg-orange-500/20 text-orange-400 border-orange-500/30 font-bold'
+                        : 'bg-[var(--home-surface-subtle)] text-[var(--home-text-muted)] border border-[var(--home-border)]'
+                    }`}>
                       {tool.badge}
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-[var(--home-text-primary)] block group-hover:text-emerald-500 transition">
+                    <span className={`text-xs font-bold block transition ${
+                      tool.highlight
+                        ? 'text-orange-400 group-hover:text-orange-300'
+                        : 'text-[var(--home-text-primary)] group-hover:text-emerald-500'
+                    }`}>
                       {tool.label}
                     </span>
                     <span className="text-[10px] text-[var(--home-text-muted)] line-clamp-1">
@@ -308,7 +336,7 @@ export default function Landing() {
             {/* Photographic Laboratory Visual */}
             <div className="lg:col-span-7 relative min-h-[260px] sm:min-h-[340px] overflow-hidden border-b lg:border-b-0 lg:border-r border-[var(--home-border)]">
               <img
-                src="/assets/lab_hero.jpg"
+                src={assetUrl('assets/lab_hero.jpg')}
                 alt="Analytical Chemistry Research Laboratory Workstation"
                 className="w-full h-full object-cover object-center transition duration-500 hover:scale-102"
                 loading="eager"
@@ -488,7 +516,7 @@ export default function Landing() {
           <div className="card-feature-interactive flex flex-col justify-between">
             <div className="relative h-48 sm:h-56 overflow-hidden border-b border-[var(--home-border)]">
               <img
-                src="/assets/spectroscopy_lab.jpg"
+                src={assetUrl('assets/spectroscopy_lab.jpg')}
                 alt="Chemist analyzing FTIR and NMR spectroscopy data"
                 className="w-full h-full object-cover object-center transition duration-500 hover:scale-102"
                 loading="lazy"
@@ -523,7 +551,7 @@ export default function Landing() {
           <div className="card-feature-interactive flex flex-col justify-between">
             <div className="relative h-48 sm:h-56 overflow-hidden border-b border-[var(--home-border)]">
               <img
-                src="/assets/synthesis_lab.jpg"
+                src={assetUrl('assets/synthesis_lab.jpg')}
                 alt="Organic chemistry reaction apparatus in fume hood"
                 className="w-full h-full object-cover object-center transition duration-500 hover:scale-102"
                 loading="lazy"

@@ -107,6 +107,15 @@ export function Hero01({ className = "" }) {
           {/* Header Actions */}
           <div className="flex items-center gap-2">
             <button
+              onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-copilot'))}
+              className="px-3 py-1.5 rounded-xl border border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 text-xs font-mono font-bold text-orange-400 hover:text-orange-300 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+              title="Open ChemSpace AI Copilot"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+              <span>ChemSpace AI</span>
+            </button>
+
+            <button
               onClick={toggleTheme}
               className="p-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-inner)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
               title={`Toggle theme (${theme})`}
@@ -372,14 +381,23 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
       </p>
 
       {/* Main Action Buttons */}
-      <div className="mb-6 grid grid-cols-2 items-center gap-4 sm:mb-8 sm:flex">
+      <div className="mb-6 flex flex-wrap items-center gap-3 sm:mb-8">
         <Button
           onClick={() => navigate("/chemdraw")}
-          className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold border-none px-6 sm:px-8 py-3 rounded-xl shadow-lg shadow-orange-500/25 cursor-pointer text-sm flex items-center gap-2"
+          className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold border-none px-6 sm:px-7 py-3 rounded-xl shadow-lg shadow-orange-500/25 cursor-pointer text-sm flex items-center gap-2 active:scale-95 transition"
           size="lg"
         >
           <PenTool className="w-4 h-4" />
           <span>Launch ChemDraw CAD</span>
+        </Button>
+
+        <Button
+          onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-copilot'))}
+          className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white font-bold border-none px-6 sm:px-7 py-3 rounded-xl shadow-lg shadow-emerald-500/25 cursor-pointer text-sm flex items-center gap-2 active:scale-95 transition"
+          size="lg"
+        >
+          <Sparkles className="w-4 h-4 text-emerald-200 animate-pulse" />
+          <span>ChemSpace AI Copilot</span>
         </Button>
 
         <Button
@@ -388,7 +406,7 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
             if (elem) elem.scrollIntoView({ behavior: "smooth" });
             else navigate("/workspace");
           }}
-          className="px-6 sm:px-8 py-3 rounded-xl border border-[var(--border-subtle)] hover:border-orange-500/50 hover:bg-[var(--bg-hover)] text-[var(--text-primary)] font-bold transition cursor-pointer text-sm flex items-center gap-2"
+          className="px-6 sm:px-7 py-3 rounded-xl border border-[var(--border-subtle)] hover:border-orange-500/50 hover:bg-[var(--bg-hover)] text-[var(--text-primary)] font-bold transition cursor-pointer text-sm flex items-center gap-2"
           variant="outline"
           size="lg"
         >

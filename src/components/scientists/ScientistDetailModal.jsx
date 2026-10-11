@@ -385,7 +385,14 @@ export default function ScientistDetailModal({
                         type="button"
                         onClick={() => {
                           onClose();
-                          navigate('/chemdraw');
+                          if (scientist.molecule?.smiles) {
+                            try {
+                              localStorage.setItem('chemspace_active_mol', JSON.stringify({ smiles: scientist.molecule.smiles, name: scientist.molecule.name }));
+                            } catch (e) {}
+                            navigate(`/chemdraw?smiles=${encodeURIComponent(scientist.molecule.smiles)}`);
+                          } else {
+                            navigate('/chemdraw');
+                          }
                         }}
                         className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-[var(--btn-primary-bg)] hover:bg-[var(--btn-primary-hover)] text-[var(--btn-primary-text)] transition flex items-center gap-1.5 shadow-sm"
                         title="Edit in ChemDraw CAD Studio"

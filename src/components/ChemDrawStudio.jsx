@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   MousePointer2,
   Eraser,
@@ -37,7 +37,10 @@ import {
   CheckCircle2,
   Share2,
   FileCode,
-  Workflow
+  Workflow,
+  FileText,
+  Database,
+  Image as ImageIcon
 } from 'lucide-react';
 import ThreeMoleculeViewer from './ThreeMoleculeViewer';
 import { useTheme } from '../context/ThemeContext';
@@ -54,6 +57,7 @@ import {
   PERIODIC_ELEMENTS,
   STANDARD_VALENCES
 } from '../services/chemicalGraph';
+import { resolveMolecule } from '../services/moleculeResolver';
 import { logActivity } from '../services/activityStore';
 import { recordDownload } from '../services/downloadsManager';
 import DownloadTransactionMenu from './common/DownloadTransactionMenu';
@@ -107,11 +111,13 @@ const STANDARD_BOND_LENGTH = 50;
 
 export default function ChemDrawStudio() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
+  const isNewlyPlacedStartAtomRef = useRef(false);
 
   // Studio Tools: 'select', 'eraser', 'bond', 'atom', 'ring', 'fragment', 'lasso', 'charge_pos', 'charge_neg'
   const [selectedTool, setSelectedTool] = useState('bond');
@@ -230,6 +236,63 @@ export default function ChemDrawStudio() {
       setSelectedBondIds([]);
     }
   }, [history, historyStep]);
+
+  // Handle URL Query Parameters (?smiles=... or ?search=...) or active molecule context
+  useEffect(() => {
+    const smilesParam = searchParams.get('smiles');
+    const searchParam = searchParams.get('search');
+
+    if (smilesParam) {
+      try {
+        const { atoms: nA, bonds: nB } = parseSmilesTo2D(smilesParam.trim());
+        if (nA && nA.length > 0) {
+          const cleaned = cleanUpStructure2D(nA, nB);
+          setAtoms(cleaned.atoms);
+          setBonds(cleaned.bonds);
+          setHistory([{ atoms: cleaned.atoms, bonds: cleaned.bonds }]);
+          setHistoryStep(0);
+          return;
+        }
+      } catch (e) {
+        console.warn('Failed to parse SMILES parameter:', e);
+      }
+    }
+
+    if (searchParam) {
+      resolveMolecule(searchParam)
+        .then((res) => {
+          if (res && res.success && res.smiles) {
+            const { atoms: nA, bonds: nB } = parseSmilesTo2D(res.smiles.trim());
+            if (nA && nA.length > 0) {
+              const cleaned = cleanUpStructure2D(nA, nB);
+              setAtoms(cleaned.atoms);
+              setBonds(cleaned.bonds);
+              setHistory([{ atoms: cleaned.atoms, bonds: cleaned.bonds }]);
+              setHistoryStep(0);
+            }
+          }
+        })
+        .catch(console.error);
+      return;
+    }
+
+    try {
+      const activeMolStr = localStorage.getItem('chemspace_active_mol');
+      if (activeMolStr) {
+        const activeMol = JSON.parse(activeMolStr);
+        if (activeMol && activeMol.smiles) {
+          const { atoms: nA, bonds: nB } = parseSmilesTo2D(activeMol.smiles.trim());
+          if (nA && nA.length > 0) {
+            const cleaned = cleanUpStructure2D(nA, nB);
+            setAtoms(cleaned.atoms);
+            setBonds(cleaned.bonds);
+            setHistory([{ atoms: cleaned.atoms, bonds: cleaned.bonds }]);
+            setHistoryStep(0);
+          }
+        }
+      }
+    } catch (e) {}
+  }, [searchParams]);
 
   // Coordinate Conversion between Screen & Canvas World Coordinates
   const screenToWorld = useCallback((screenX, screenY) => {
@@ -854,10 +917,12 @@ export default function ChemDrawStudio() {
       // Start drag drawing from clicked atom OR place new atom and drag from it
       setIsDrawingBond(true);
       if (clickedAtom) {
+        isNewlyPlacedStartAtomRef.current = false;
         setDrawingStartAtomId(clickedAtom.id);
         setDrawingStartPos({ x: clickedAtom.x, y: clickedAtom.y });
         setSelectedAtomIds([clickedAtom.id]);
       } else {
+        isNewlyPlacedStartAtomRef.current = true;
         const newId = Date.now();
         const newAtoms = [...atoms, { id: newId, element: activeElement, x: Math.round(world.x), y: Math.round(world.y), charge: 0 }];
         setAtoms(newAtoms);
@@ -996,45 +1061,105 @@ export default function ChemDrawStudio() {
       let targetId = snapToAtomId;
       const nextAtoms = [...atoms];
       const nextBonds = [...bonds];
+      const dist = Math.hypot(drawingCurrentPos.x - drawingStartPos.x, drawingCurrentPos.y - drawingStartPos.y);
 
-      if (!targetId) {
-        // Create new destination atom
-        targetId = Date.now() + 1;
-        nextAtoms.push({
-          id: targetId,
-          element: activeElement,
-          x: drawingCurrentPos.x,
-          y: drawingCurrentPos.y,
-          charge: 0
-        });
-      }
-
-      if (startId && targetId && startId !== targetId) {
-        const existingBond = nextBonds.find(
-          (b) => (b.from === startId && b.to === targetId) || (b.from === targetId && b.to === startId)
-        );
-
-        const order = activeBondType === 'double' ? 2 : activeBondType === 'triple' ? 3 : activeBondType === 'aromatic' ? 1.5 : 1;
-
-        if (existingBond) {
-          existingBond.type = activeBondType;
-          existingBond.order = order;
-        } else {
-          nextBonds.push({
-            id: Date.now() + 2,
-            from: startId,
-            to: targetId,
-            type: activeBondType,
-            order
+      if (dist < 15) {
+        // Simple click without dragging!
+        if (isNewlyPlacedStartAtomRef.current) {
+          // User placed an atom on empty canvas; commit single atom
+          pushHistory(nextAtoms, nextBonds);
+        } else if (startId) {
+          // User clicked an existing atom: sprout a new bond at open angle
+          const startAtom = atoms.find((a) => a.id === startId);
+          if (startAtom) {
+            const connectedBonds = bonds.filter((b) => b.from === startId || b.to === startId);
+            let sproutAngle = -Math.PI / 6;
+            if (connectedBonds.length === 1) {
+              const b = connectedBonds[0];
+              const otherId = b.from === startId ? b.to : b.from;
+              const other = atoms.find((a) => a.id === otherId);
+              if (other) {
+                const inAngle = Math.atan2(startAtom.y - other.y, startAtom.x - other.x);
+                sproutAngle = inAngle + Math.PI / 3;
+              }
+            } else if (connectedBonds.length > 1) {
+              let sumDx = 0, sumDy = 0;
+              connectedBonds.forEach((b) => {
+                const otherId = b.from === startId ? b.to : b.from;
+                const other = atoms.find((a) => a.id === otherId);
+                if (other) {
+                  sumDx += other.x - startAtom.x;
+                  sumDy += other.y - startAtom.y;
+                }
+              });
+              sproutAngle = Math.atan2(-sumDy, -sumDx);
+            }
+            sproutAngle = Math.round(sproutAngle / (Math.PI / 6)) * (Math.PI / 6);
+            const sproutTargetId = Date.now() + 1;
+            const sproutX = Math.round(startAtom.x + STANDARD_BOND_LENGTH * Math.cos(sproutAngle));
+            const sproutY = Math.round(startAtom.y + STANDARD_BOND_LENGTH * Math.sin(sproutAngle));
+            nextAtoms.push({
+              id: sproutTargetId,
+              element: activeElement,
+              x: sproutX,
+              y: sproutY,
+              charge: 0
+            });
+            const order = activeBondType === 'double' ? 2 : activeBondType === 'triple' ? 3 : activeBondType === 'aromatic' ? 1.5 : 1;
+            nextBonds.push({
+              id: Date.now() + 2,
+              from: startId,
+              to: sproutTargetId,
+              type: activeBondType,
+              order
+            });
+            setAtoms(nextAtoms);
+            setBonds(nextBonds);
+            pushHistory(nextAtoms, nextBonds);
+            setSelectedAtomIds([sproutTargetId]);
+          }
+        }
+      } else {
+        // Drag drawing
+        if (!targetId) {
+          // Create new destination atom
+          targetId = Date.now() + 1;
+          nextAtoms.push({
+            id: targetId,
+            element: activeElement,
+            x: drawingCurrentPos.x,
+            y: drawingCurrentPos.y,
+            charge: 0
           });
         }
 
-        setAtoms(nextAtoms);
-        setBonds(nextBonds);
-        pushHistory(nextAtoms, nextBonds);
+        if (startId && targetId && startId !== targetId) {
+          const existingBond = nextBonds.find(
+            (b) => (b.from === startId && b.to === targetId) || (b.from === targetId && b.to === startId)
+          );
 
-        // Continue drawing seamlessly from the newly created atom
-        setSelectedAtomIds([targetId]);
+          const order = activeBondType === 'double' ? 2 : activeBondType === 'triple' ? 3 : activeBondType === 'aromatic' ? 1.5 : 1;
+
+          if (existingBond) {
+            existingBond.type = activeBondType;
+            existingBond.order = order;
+          } else {
+            nextBonds.push({
+              id: Date.now() + 2,
+              from: startId,
+              to: targetId,
+              type: activeBondType,
+              order
+            });
+          }
+
+          setAtoms(nextAtoms);
+          setBonds(nextBonds);
+          pushHistory(nextAtoms, nextBonds);
+
+          // Continue drawing seamlessly from the newly created atom
+          setSelectedAtomIds([targetId]);
+        }
       }
 
       setIsDrawingBond(false);
@@ -1042,6 +1167,7 @@ export default function ChemDrawStudio() {
       setDrawingStartPos(null);
       setDrawingCurrentPos(null);
       setSnapToAtomId(null);
+      isNewlyPlacedStartAtomRef.current = false;
     }
   };
 
@@ -1127,7 +1253,42 @@ export default function ChemDrawStudio() {
       y: atom.y + (radius + STANDARD_BOND_LENGTH) * Math.sin(avgAngle)
     };
 
-    placeStandaloneRing(ringCenter.x, ringCenter.y, ringId);
+    const newAtoms = [];
+    const newBonds = [];
+    for (let i = 0; i < sides; i++) {
+      const angle = (i * Math.PI * 2) / sides + avgAngle + Math.PI;
+      newAtoms.push({
+        id: baseId + i,
+        element: 'C',
+        x: Math.round(ringCenter.x + radius * Math.cos(angle)),
+        y: Math.round(ringCenter.y + radius * Math.sin(angle)),
+        charge: 0
+      });
+    }
+    for (let i = 0; i < sides; i++) {
+      const nextIdx = (i + 1) % sides;
+      newBonds.push({
+        id: baseId + 20 + i,
+        from: baseId + i,
+        to: baseId + nextIdx,
+        type: template.aromatic ? 'aromatic' : 'single',
+        order: template.aromatic ? 1.5 : 1
+      });
+    }
+    // Connect target atom to the closest ring atom with single bond
+    newBonds.push({
+      id: baseId + 99,
+      from: atom.id,
+      to: baseId,
+      type: 'single',
+      order: 1
+    });
+
+    const nextAtoms = [...atoms, ...newAtoms];
+    const nextBonds = [...bonds, ...newBonds];
+    setAtoms(nextAtoms);
+    setBonds(nextBonds);
+    pushHistory(nextAtoms, nextBonds);
   };
 
   const fuseRingOntoBond = (bond, ringId) => {
@@ -1728,7 +1889,7 @@ export default function ChemDrawStudio() {
               { id: 'mol', label: 'MDL Molfile (.mol)', ext: 'mol', mime: 'chemical/x-mdl-molfile', icon: FileCode },
               { id: 'smi', label: 'SMILES File (.smi)', ext: 'smi', mime: 'text/plain', icon: FileText },
               { id: 'json', label: 'Chemical Graph JSON (.json)', ext: 'json', mime: 'application/json', icon: Database },
-              { id: 'png', label: 'Canvas Raster (.png)', ext: 'png', mime: 'image/png', icon: Image },
+              { id: 'png', label: 'Canvas Raster (.png)', ext: 'png', mime: 'image/png', icon: ImageIcon },
             ]}
             getData={async (formatId) => {
               if (formatId === 'mol') {
@@ -1803,6 +1964,7 @@ export default function ChemDrawStudio() {
           {/* Main Pointer Tools */}
           <div className="flex flex-col gap-2">
             <ToolButton active={selectedTool === 'select'} onClick={() => setSelectedTool('select')} icon={MousePointer2} label="Select (S)" />
+            <ToolButton active={selectedTool === 'bond'} onClick={() => setSelectedTool('bond')} icon={PenTool} label="Draw Bond / Sketch (B)" color="text-orange-500" />
             <ToolButton active={selectedTool === 'eraser'} onClick={() => setSelectedTool('eraser')} icon={Eraser} label="Eraser (E)" color="text-rose-500" />
             <ToolButton active={selectedTool === 'charge_pos'} onClick={() => setSelectedTool('charge_pos')} icon={Plus} label="Add Positive Charge (+)" color="text-orange-500" />
             <ToolButton active={selectedTool === 'charge_neg'} onClick={() => setSelectedTool('charge_neg')} icon={Minus} label="Add Negative Charge (-)" color="text-rose-400" />

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Bot, User, Copy, Check, Volume2, VolumeX, RotateCcw, Terminal, BookOpen, Globe, Wrench, ExternalLink } from 'lucide-react';
 import { isSmilesString } from '../../services/chemicalResolver';
 import { aiCopilot } from '../../services/aiCopilotService';
+import FormattedAIResponse from '../common/FormattedAIResponse';
 
 function InlineCodePill({ code }) {
   const [copied, setCopied] = useState(false);
@@ -295,7 +296,11 @@ export default function ChatMessage({ message, isLast, onRegenerate }) {
             </div>
           )}
 
-          <div className="whitespace-pre-wrap">{formatText(message.content)}</div>
+          {isAI ? (
+            <FormattedAIResponse content={message.content} />
+          ) : (
+            <div className="whitespace-pre-wrap">{message.content}</div>
+          )}
 
           {/* Citations / Sources */}
           {isAI && message.citations && message.citations.length > 0 && (

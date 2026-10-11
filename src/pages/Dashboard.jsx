@@ -336,7 +336,10 @@ export default function Dashboard() {
             <button
               onClick={() => {
                 logActivity('ChemDraw', 'Opened ChemDraw CAD Studio', 'Preloaded Aspirin molecular graph', 'sketch');
-                navigate('/chemdraw');
+                try {
+                  localStorage.setItem('chemspace_active_mol', JSON.stringify({ smiles: 'CC(=O)Oc1ccccc1C(=O)O', name: 'Aspirin' }));
+                } catch (e) {}
+                navigate('/chemdraw?smiles=' + encodeURIComponent('CC(=O)Oc1ccccc1C(=O)O'));
               }}
               className="p-3.5 rounded-2xl inner-box hover:border-[var(--border-strong)] transition flex items-center justify-between text-left group shadow-sm cursor-pointer"
             >

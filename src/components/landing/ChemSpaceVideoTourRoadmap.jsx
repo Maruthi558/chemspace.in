@@ -29,7 +29,8 @@ import {
   Info,
   HelpCircle,
   FileText,
-  Share2
+  Share2,
+  FolderLock
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { recordDownload } from '../../services/downloadsManager';

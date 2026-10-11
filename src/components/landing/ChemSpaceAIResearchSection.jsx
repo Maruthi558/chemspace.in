@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { streamGeminiChat } from '../../services/geminiService';
+import FormattedAIResponse from '../common/FormattedAIResponse';
+import AIThinkingIndicator from '../common/AIThinkingIndicator';
 
 const SAMPLE_QUERIES = [
   'What are the latest synthesis pathways for fluorinated aromatics?',
@@ -42,6 +44,7 @@ export default function ChemSpaceAIResearchSection() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [copiedResult, setCopiedResult] = useState(false);
   const abortRef = useRef(null);
 
   const handleExecuteSearch = async (queryToRun) => {
@@ -280,7 +283,18 @@ export default function ChemSpaceAIResearchSection() {
           {/* ───────────────────────────────────────────────────────────────────
               LIVE STREAMED RESULT CARD
              ─────────────────────────────────────────────────────────────────── */}
-          {searchResults && (
+          {isSearching && (!searchResults || !searchResults.text) && (
+            <div className="max-w-3xl mx-auto my-4">
+              <AIThinkingIndicator
+                mode="search"
+                query={promptText}
+                statusMessage="Scanning PubChem, NIST & ChemSpace molecular libraries..."
+                onCancel={() => abortRef.current?.abort()}
+              />
+            </div>
+          )}
+
+          {searchResults && searchResults.text && (
             <div className="max-w-3xl mx-auto rounded-xl border border-orange-500/30 bg-neutral-900 text-white p-5 sm:p-6 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-300 space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
                 <div className="flex items-center gap-2 text-xs font-mono text-orange-400 font-bold">
@@ -289,18 +303,31 @@ export default function ChemSpaceAIResearchSection() {
                   {isSearching && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-ping" />}
                 </div>
 
-                <button
-                  onClick={() => setSearchResults(null)}
-                  className="text-[11px] font-mono text-neutral-400 hover:text-white"
-                >
-                  Close ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(searchResults.text);
+                      setCopiedResult(true);
+                      setTimeout(() => setCopiedResult(false), 2000);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-[11px] font-mono text-neutral-300 hover:text-white transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {copiedResult ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedResult ? 'Copied' : 'Copy Output'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setSearchResults(null)}
+                    className="text-[11px] font-mono text-neutral-400 hover:text-white p-1"
+                  >
+                    Close ✕
+                  </button>
+                </div>
               </div>
 
-              {/* Answer body */}
-              <div className="text-xs sm:text-sm text-neutral-200 leading-relaxed font-sans whitespace-pre-wrap">
-                {searchResults.text || 'Retrieving real-time molecular structures and spectra...'}
-              </div>
+              {/* Formatted Answer Body without raw star marks */}
+              <FormattedAIResponse content={searchResults.text} className="text-neutral-100" />
 
               {/* Sources list */}
               {searchResults.sources && searchResults.sources.length > 0 && (

@@ -82,6 +82,16 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
     };
   }, []);
 
+  // Listen for global custom event to open/un-minimize AI Copilot from any button
+  useEffect(() => {
+    const handleOpenCopilot = () => {
+      setIsMinimized(false);
+      if (onOpen) onOpen();
+    };
+    window.addEventListener('chemspace-open-copilot', handleOpenCopilot);
+    return () => window.removeEventListener('chemspace-open-copilot', handleOpenCopilot);
+  }, [onOpen]);
+
   const updateVoiceSetting = (key, value) => {
     let updated;
     if (key === 'voiceGender') updated = aiCopilot.setVoiceGender(value);

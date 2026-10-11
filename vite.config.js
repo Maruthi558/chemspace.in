@@ -16,10 +16,24 @@ function spaFallbackPlugin() {
         const indexPath = path.join(distDir, 'index.html');
         const fallback200 = path.join(distDir, '200.html');
         const fallback404 = path.join(distDir, '404.html');
+        const public404 = path.resolve(__dirname, 'public', '404.html');
+        const publicRedirects = path.resolve(__dirname, 'public', '_redirects');
+
         if (fs.existsSync(indexPath)) {
           fs.copyFileSync(indexPath, fallback200);
-          fs.copyFileSync(indexPath, fallback404);
           fs.writeFileSync(path.join(distDir, '.nojekyll'), '');
+        }
+
+        // Keep smart SPA 404.html redirector for GitHub Pages
+        if (fs.existsSync(public404)) {
+          fs.copyFileSync(public404, fallback404);
+        } else if (fs.existsSync(indexPath)) {
+          fs.copyFileSync(indexPath, fallback404);
+        }
+
+        // Copy _redirects for Netlify & Cloudflare Pages
+        if (fs.existsSync(publicRedirects)) {
+          fs.copyFileSync(publicRedirects, path.join(distDir, '_redirects'));
         }
 
         // Generate deployment package.json in dist for branch runners (e.g. Cloudflare Pages / opt/buildhome)
@@ -50,37 +64,6 @@ function spaFallbackPlugin() {
           wranglerConfig.assets = { directory: '.', not_found_handling: 'single-page-application' };
           fs.writeFileSync(distWrangler, JSON.stringify(wranglerConfig, null, 2));
         }
-
-        // Sync full bundle to docs/ folder (supports GitHub Pages Source: master /docs)
-        const docsDir = path.resolve(__dirname, 'docs');
-        fs.cpSync(distDir, docsDir, { recursive: true, force: true });
-
-        // Sync dist/assets to root assets/ and create canonical index.js / index.css entry points
-        // (supports GitHub Pages Source: master / (root) fallback)
-        const distAssetsDir = path.join(distDir, 'assets');
-        const rootAssetsDir = path.resolve(__dirname, 'assets');
-        if (fs.existsSync(distAssetsDir)) {
-          fs.cpSync(distAssetsDir, rootAssetsDir, { recursive: true, force: true });
-          const files = fs.readdirSync(distAssetsDir);
-          const jsEntry = files.find(f => f.startsWith('index-') && f.endsWith('.js'));
-          const cssEntry = files.find(f => f.startsWith('index-') && f.endsWith('.css'));
-
-          if (jsEntry) {
-            fs.copyFileSync(path.join(distAssetsDir, jsEntry), path.join(rootAssetsDir, 'index.js'));
-            fs.copyFileSync(path.join(distAssetsDir, jsEntry), path.join(distAssetsDir, 'index.js'));
-          }
-          if (cssEntry) {
-            fs.copyFileSync(path.join(distAssetsDir, cssEntry), path.join(rootAssetsDir, 'index.css'));
-            fs.copyFileSync(path.join(distAssetsDir, cssEntry), path.join(distAssetsDir, 'index.css'));
-          }
-
-          const manifest = {
-            entry: jsEntry ? `assets/${jsEntry}` : 'assets/index.js',
-            css: cssEntry ? `assets/${cssEntry}` : 'assets/index.css'
-          };
-          fs.writeFileSync(path.join(rootAssetsDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
-          fs.writeFileSync(path.join(distAssetsDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
-        }
       } catch (err) {
         console.warn('Could not generate SPA fallbacks or deployment artifacts:', err);
       }
@@ -89,7 +72,7 @@ function spaFallbackPlugin() {
 }
 
 const isGitHubDeploy = Boolean(process.env.GITHUB_ACTIONS || process.env.GITHUB_PAGES);
-const basePath = isGitHubDeploy ? '/chemspace.in/' : (process.env.VITE_BASE_PATH || './');
+const basePath = process.env.VITE_BASE_PATH || (isGitHubDeploy ? '/chemspace.in/' : '/');
 
 export default defineConfig({
   base: basePath,

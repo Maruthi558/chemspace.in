@@ -24,6 +24,8 @@ import {
 import { streamGeminiChat } from '../../services/geminiService';
 import { saveUserWorkspaceItem } from '../../services/workspaceApi';
 import { useAuth } from '../../context/AuthContext';
+import FormattedAIResponse from '../common/FormattedAIResponse';
+import AIThinkingIndicator from '../common/AIThinkingIndicator';
 
 const WORKSPACE_PROMPTS = [
   {
@@ -274,7 +276,11 @@ export default function WorkspaceAICopilot({ onRecordSaved }) {
       </div>
 
       {/* Live AI Reasoning Output Console */}
-      {(streamedAnswer || isGenerating) && (
+      {isGenerating && !streamedAnswer && (
+        <AIThinkingIndicator mode="reasoning" query={inputQuery} />
+      )}
+
+      {streamedAnswer && (
         <div className="space-y-3 p-5 rounded-2xl border border-orange-500/30 bg-[var(--bg-inner)]/80 backdrop-blur-md shadow-xl animate-in fade-in duration-300">
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] text-xs">
             <div className="flex items-center gap-2 text-orange-500 font-bold font-mono text-xs">
@@ -290,7 +296,7 @@ export default function WorkspaceAICopilot({ onRecordSaved }) {
                 className="btn-secondary py-1 px-2.5 text-xs font-mono flex items-center gap-1 cursor-pointer"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Copied' : 'Copy'}</span>
+                <span>{copied ? 'Copied' : 'Copy Output'}</span>
               </button>
 
               <button
@@ -304,9 +310,7 @@ export default function WorkspaceAICopilot({ onRecordSaved }) {
             </div>
           </div>
 
-          <div className="prose prose-sm max-w-none text-xs sm:text-sm text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap font-sans selection:bg-orange-500/20">
-            {streamedAnswer || 'Initializing ChemSpace DeepChem reasoning stream...'}
-          </div>
+          <FormattedAIResponse content={streamedAnswer} />
 
           {/* Quick Launch Workbench Action Bar */}
           {detectedSmiles && !isGenerating && (
