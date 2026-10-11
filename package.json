@@ -1,0 +1,11 @@
+{
+  "name": "chemspace",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'ChemSpace production bundle already compiled'",
+    "start": "npx serve .",
+    "preview": "vite preview"
+  }
+}
