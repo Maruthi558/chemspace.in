@@ -147,3 +147,82 @@ export function formatUnresolvableResponse(langCode, query) {
       return `I could not reliably resolve **"${query}"** into a verified chemical structure or canonical SMILES string.\n\nPlease check the spelling of the chemical name, or provide the IUPAC systematic name, molecular formula, or SMILES representation directly.`;
   }
 }
+
+/**
+ * Rapid scientific translation helper for Telugu <-> English queries
+ */
+export function translateScientificQuery(text = '', targetLang = 'en') {
+  if (!text || typeof text !== 'string') return text;
+  const trimmed = text.trim();
+
+  // If target is English and input has Telugu:
+  if (targetLang === 'en') {
+    let out = trimmed;
+    // Conversational and question patterns
+    const teToEnPatterns = [
+      [/గురించి చెప్పు|గురించి వివరించు|గురించి సమాచారం ఇవ్వండి/gi, 'tell me about'],
+      [/మాలిక్యులర్ వెయిట్ ఎంత|మాలిక్యులర్ బరువు ఎంత|అణు భారం ఎంత/gi, 'what is the molecular weight of'],
+      [/స్మైల్స్ కోడ్ ఏమిటి|స్మైల్స్ ఏమిటి|SMILES ఏమిటి/gi, 'what is the SMILES for'],
+      [/రసాయన సూత్రం ఏమిటి|ఫార్ములా ఏమిటి|ఫార్ములా చెప్పండి/gi, 'what is the chemical formula of'],
+      [/చర్యల మెకానిజం|మెకానిజం వివరించు/gi, 'reaction mechanism of'],
+      [/ఎలా పనిచేస్తుంది/gi, 'how does it work'],
+      [/తేడా ఏమిటి|మధ్య తేడాలు ఏమిటి/gi, 'what is the difference between'],
+      [/ఉపయోగాలు ఏమిటి|ఉపయోగం ఏమిటి/gi, 'what are the uses of'],
+      [/నిర్మాణం ఏమిటి|నిర్మాణాన్ని చూపించండి/gi, 'what is the structure of']
+    ];
+
+    for (const [re, rep] of teToEnPatterns) {
+      out = out.replace(re, rep);
+    }
+
+    // Common Telugu chemical entity words
+    const teChemicals = {
+      'నీరు': 'water',
+      'నీటి': 'water',
+      'బెంజీన్': 'benzene',
+      'కెఫీన్': 'caffeine',
+      'కాఫీన్': 'caffeine',
+      'ఆస్పిరిన్': 'aspirin',
+      'పారాసిటమాల్': 'paracetamol',
+      'గ్లూకోజ్': 'glucose',
+      'ఇథనాల్': 'ethanol',
+      'మిథనాల్': 'methanol',
+      'ఎసిటిక్ ఆమ్లం': 'acetic acid',
+      'ఐబుప్రోఫెన్': 'ibuprofen',
+      'టోలుయీన్': 'toluene'
+    };
+    for (const [te, en] of Object.entries(teChemicals)) {
+      if (out.includes(te)) {
+        out = out.split(te).join(en);
+      }
+    }
+    return out.trim();
+  }
+
+  // If target is Telugu and input has English:
+  if (targetLang === 'te') {
+    let out = trimmed;
+    const enToTe = {
+      'benzene': 'బెంజీన్',
+      'caffeine': 'కెఫీన్',
+      'aspirin': 'ఆస్పిరిన్',
+      'paracetamol': 'పారాసిటమాల్',
+      'glucose': 'గ్లూకోజ్',
+      'ethanol': 'ఇథనాల్',
+      'methanol': 'మిథనాల్',
+      'acetic acid': 'ఎసిటిక్ ఆమ్లం',
+      'ibuprofen': 'ఐబుప్రోఫెన్',
+      'water': 'నీరు',
+      'tell me about': 'గురించి వివరించు',
+      'what is the molecular weight of': 'యొక్క మాలిక్యులర్ బరువు ఎంత',
+      'what is the smiles for': 'యొక్క SMILES కోడ్ ఏమిటి'
+    };
+    for (const [en, te] of Object.entries(enToTe)) {
+      const reg = new RegExp(`\\b${en}\\b`, 'gi');
+      out = out.replace(reg, te);
+    }
+    return out.trim();
+  }
+
+  return trimmed;
+}

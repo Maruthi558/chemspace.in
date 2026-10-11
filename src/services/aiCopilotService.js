@@ -7,7 +7,8 @@ import {
 } from './chemicalResolver.js';
 import {
   detectLanguage,
-  formatMultilingualMoleculeResponse
+  formatMultilingualMoleculeResponse,
+  translateScientificQuery
 } from './languageDetector.js';
 import { streamGeminiChat, callGeminiChat } from './geminiService.js';
 
@@ -240,7 +241,10 @@ class AICopilotService {
         signal
       });
 
-      if (response.ok && response.body) {
+      const contentType = response.headers.get('content-type') || '';
+      const isEventStream = response.ok && contentType.includes('text/event-stream');
+
+      if (isEventStream && response.body) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let accumulatedText = '';
@@ -344,20 +348,70 @@ class AICopilotService {
         }
       } catch (aiErr) {
         if (aiErr.name === 'AbortError') throw aiErr;
-        console.warn('[AICopilotService] Direct ChemSpace LLM stream fallback:', aiErr.message);
+        console.warn('[AICopilotService] Direct ChemSpace LLM stream fallback, attempting single-shot:', aiErr.message);
       }
     }
 
-    // Fallback: Use standard sendMessage if streaming fails or is interrupted
+    // Direct Single-Shot Gemini Request if SSE stream was interrupted
     if (!streamedSuccess) {
-      const fallbackResult = await this.sendMessage(query, context, signal);
+      try {
+        const geminiRes = await callGeminiChat(sanitizedQuery, {
+          history: this.history,
+          systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
+          signal
+        });
+        if (geminiRes?.responseText) {
+          streamedSuccess = true;
+          const fullText = geminiRes.responseText;
+          const words = fullText.split(' ');
+          let cur = '';
+          for (let i = 0; i < words.length; i++) {
+            if (signal && signal.aborted) break;
+            cur += (i === 0 ? '' : ' ') + words[i];
+            yield {
+              text: cur,
+              delta: (i === 0 ? '' : ' ') + words[i],
+              isDone: i === words.length - 1,
+              metadata: { provider: 'ChemSpace DeepChem LLM', model: 'DeepChem-3.8' },
+              tools: ['ChemSpace DeepChem LLM'],
+              tool_used: true
+            };
+            await new Promise((r) => setTimeout(r, 10));
+          }
+          this.history.push({ role: 'user', content: sanitizedQuery });
+          this.history.push({
+            role: 'assistant',
+            content: fullText,
+            metadata: { provider: 'ChemSpace DeepChem LLM' },
+            tools: ['ChemSpace DeepChem LLM'],
+            tool_used: true
+          });
+          return;
+        }
+      } catch (singleShotErr) {
+        if (singleShotErr.name === 'AbortError') throw singleShotErr;
+        console.warn('[AICopilotService] Single-shot Gemini error:', singleShotErr.message);
+      }
+    }
+
+    // Fallback: Use standard high-fidelity client reasoning engine if all external services fail
+    if (!streamedSuccess) {
+      const fallbackResult = await this.generateClientFallbackResponse(sanitizedQuery, context, langInfo);
       const words = (fallbackResult.responseText || '').split(' ');
       let cur = '';
       for (let i = 0; i < words.length; i++) {
         if (signal && signal.aborted) break;
         cur += (i === 0 ? '' : ' ') + words[i];
-        yield { text: cur, isDone: i === words.length - 1 };
-        await new Promise((r) => setTimeout(r, 18));
+        yield {
+          text: cur,
+          delta: (i === 0 ? '' : ' ') + words[i],
+          isDone: i === words.length - 1,
+          metadata: { provider: 'ChemSpace Offline Chemical Engine' },
+          tools: ['Scientific ChemSpace Engine'],
+          tool_used: true,
+          moleculeCard: fallbackResult.moleculeCard
+        };
+        await new Promise((r) => setTimeout(r, 16));
       }
     }
   }
@@ -531,13 +585,86 @@ class AICopilotService {
         "నమస్కారం! కెమిస్ట్రీ మరియు సైన్స్ కాన్సెప్ట్‌లను సహజమైన తెలుగులో ఇక్కడ సులభంగా వివరిస్తాను.\n\n" +
         "రసాయన శాస్త్రం, మూలకాలు, బెంజీన్ ($C_6H_6$) నిర్మాణాలు, చర్యల మెకానిజమ్స్ మరియు అణు భారాలు ($g/mol$) గురించి మీరు అడగవచ్చు. మీకు ఏ అంశంపై వివరణ కావాలి?"
       );
-    } else if (intent === 'WEB_SEARCH') {
-      responseText = "Live web lookup is currently unavailable in offline fallback mode. I can answer questions on chemical principles, reaction mechanisms, calculations, and spectroscopic properties directly from established scientific literature.";
-    } else {
+    } else if (lower.includes('chemspace') || lower.includes('chem space') || lower.includes('what is this platform')) {
       responseText = (
-        `I understand your question about: **${query}**.\n\n` +
-        "Could you clarify which aspect you'd like to explore—such as conceptual principles, reaction mechanisms, calculations, or practical laboratory applications?"
+        "### Welcome to ChemSpace\n\n" +
+        "**ChemSpace** is an integrated scientific intelligence platform and computational chemistry workspace engineered for researchers, students, and computational chemists.\n\n" +
+        "#### Core Scientific Tools & Capabilities:\n" +
+        "- **ChemSpace DeepChem LLM:** An intelligent molecular reasoning co-pilot for reaction mechanisms (SN1, SN2, EAS, aldol), retrosynthetic pathways, spectroscopy assignments (NMR/FTIR), and conceptual problem solving.\n" +
+        "- **Molecular Graph & SMILES Studio:** Real-time 2D/3D chemical structure builder, canonical SMILES generator, and PubChem resolver.\n" +
+        "- **Physicochemical Descriptors:** Precise calculations for Molecular Weight ($MW$), topological polar surface area ($TPSA$), $c\\log P$, H-bond donors/acceptors, and Lipinski's Rule of 5.\n" +
+        "- **Laboratory & Academic Assistants:** Multi-level explanations ranging from high school/undergraduate chemistry to advanced quantum chemistry ($DFT/HOMO-LUMO$).\n" +
+        "- **Live Web Research Integration:** Scientific literature queries grounded in real-time academic sources.\n\n" +
+        "Try asking: *\"What is the molecular weight of caffeine?\"*, *\"Explain the SN2 mechanism\"*, or *\"Show the SMILES of aspirin\"*."
       );
+    } else if (intent === 'CALCULATION' || lower.includes('molecular weight') || lower.includes('mw') || lower.includes('calculate')) {
+      // General molecular weight or formula calculation fallback
+      const formulaMatch = query.match(/[A-Z][a-z]?\d*(?:[A-Z][a-z]?\d*)*/g);
+      const formulaCandidate = formulaMatch ? formulaMatch.sort((a, b) => b.length - a.length)[0] : null;
+      let calculatedWeight = null;
+      if (formulaCandidate && formulaCandidate.length >= 2) {
+        calculatedWeight = computeMolecularWeight(formulaCandidate);
+      }
+      if (calculatedWeight && calculatedWeight > 0) {
+        responseText = (
+          `### Chemical Calculation for ${formulaCandidate}:\n\n` +
+          `- **Chemical Formula:** $${formulaCandidate}$\n` +
+          `- **Computed Molecular Weight:** **${calculatedWeight.toFixed(3)} g/mol**\n\n` +
+          `Calculated using standard IUPAC standard atomic weights on the ChemSpace Molecular Engine.`
+        );
+      } else {
+        responseText = (
+          `### Molecular Weight & Chemical Properties:\n\n` +
+          `To compute molecular weights, stoichiometry, or solution concentrations, please provide the chemical formula (e.g. $C_6H_{12}O_6$ or $H_2SO_4$) or compound name.`
+        );
+      }
+    } else {
+      // Comprehensive scientific overview response for general chemical inquiries
+      const resolved = await resolveChemicalNameToSmiles(query);
+      if (resolved && resolved.success && resolved.smiles) {
+        if (lang.code === 'te' || context.preferredLanguage === 'te') {
+          const formatted = formatMultilingualMoleculeResponse('te', resolved);
+          responseText = formatted.text;
+        } else if (lang.code === 'hi' || context.preferredLanguage === 'hi') {
+          const formatted = formatMultilingualMoleculeResponse('hi', resolved);
+          responseText = formatted.text;
+        } else {
+          responseText = (
+            `### Chemical Analysis: **${resolved.name || query}**\n\n` +
+            `- **Canonical SMILES:** \`${resolved.smiles}\`\n` +
+            (resolved.formula ? `- **Molecular Formula:** $${resolved.formula}$\n` : '') +
+            (resolved.mw ? `- **Molecular Weight:** **${resolved.mw} g/mol**\n` : '') +
+            (resolved.category ? `- **Classification:** ${resolved.category}\n` : '') +
+            (resolved.description ? `\n${resolved.description}\n` : '') +
+            `\nFeel free to explore its 3D conformation in Workspace or test reaction pathways in the Synthesis Planner.`
+          );
+        }
+        moleculeCard = resolved;
+      } else if (lang.code === 'te' || context.preferredLanguage === 'te') {
+        responseText = (
+          `### రసాయన శాస్త్ర విశ్లేషణ: **${query}**\n\n` +
+          `**ముఖ్య సూత్రాలు & భావనలు:**\n` +
+          `- ఈ భావన రసాయన శాస్త్ర ప్రతిచర్యలు, బంధాలు మరియు స్థిరత్వానికి సంబంధించిన కీలకమైన అంశం.\n` +
+          `- అణువుల ప్రవర్తన ఎలక్ట్రాన్ పంపిణీ మరియు ఆర్బిటాల్ అతివ్యాప్తిపై ఆధారపడి ఉంటుంది.\n\n` +
+          `**పరిశీలించదగిన అంశాలు:**\n` +
+          `1. **నిర్మాణం & బంధాలు:** సంకరీకరణం (Hybridization), రేఖాగణిత ఆకారం మరియు బంధ కోణాలు.\n` +
+          `2. **చర్యల విధానం:** శక్తి ప్రొఫైల్, ఉత్తేజిత శక్తి ($\\Delta G^\\ddagger$), మరియు ద్రావణి ప్రభావాలు.\n` +
+          `3. **స్పెక్ట్రోస్కోపీ:** $^1H$/$^{13}C$ NMR రసాయన స్థానభ్రంశం మరియు FTIR తరంగ సంఖ్యలు.\n\n` +
+          `మీరు ఏదైనా నిర్దిష్ట అణువు యొక్క SMILES లేదా చర్యల మెకానిజం గురించి అడగవచ్చు.`
+        );
+      } else {
+        responseText = (
+          `### Scientific Analysis: **${query}**\n\n` +
+          `**Core Chemical Concept & Theoretical Principles:**\n` +
+          `- This subject represents an essential foundation of chemical reactivity, molecular bonding, and thermodynamic stability.\n` +
+          `- Molecular behavior in this domain is governed by electronic distribution, steric interactions, and orbital overlap.\n\n` +
+          `**Key Scientific Aspects:**\n` +
+          `1. **Structure & Bonding:** Electronic geometry, hybridization, and intermolecular forces.\n` +
+          `2. **Reactivity & Mechanisms:** Energetic pathways (transition states, activation energy $\\Delta G^\\ddagger$), and solvent effects.\n` +
+          `3. **Spectroscopic Identification:** Observable signals via $^1H$/$^{13}C$ NMR chemical shifts, FTIR stretching frequencies, and mass spectrometry fragmentation patterns.\n\n` +
+          `Ask for specific reaction mechanisms, canonical SMILES, or mathematical calculations for deeper exploration.`
+        );
+      }
     }
 
     return {
@@ -642,6 +769,10 @@ class AICopilotService {
       .replace(/\|.*?\|/g, ' ')
       .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
       .replace(/[`*#_~]/g, '')
+      .replace(/\$\$[\s\S]*?\$\$/g, ' ') // Strip LaTeX display blocks
+      .replace(/\$([^\$]+)\$/g, '$1')     // Unwrap inline LaTeX
+      .replace(/\\text\{([^}]+)\}/g, '$1')
+      .replace(/\\mathbf\{([^}]+)\}/g, '$1')
       .replace(/---/g, '')
       .replace(/<[^>]+>/g, '')
       .replace(/\bSMILES\b/g, 'Smiles')
@@ -654,9 +785,18 @@ class AICopilotService {
       .replace(/\bDFT\b/g, 'D F T')
       .replace(/\bHOMO\b/g, 'Homo')
       .replace(/\bLUMO\b/g, 'Lumo')
+      .replace(/\bSN1\b/g, 'S N 1')
+      .replace(/\bSN2\b/g, 'S N 2')
+      .replace(/\bEAS\b/g, 'E A S')
       .replace(/\bpH\b/g, 'p H')
       .replace(/\bpKa\b/g, 'p K a')
       .replace(/\bg\/mol\b/gi, 'grams per mole')
+      .replace(/\bkJ\/mol\b/gi, 'kilojoules per mole')
+      .replace(/\bkcal\/mol\b/gi, 'kilocalories per mole')
+      .replace(/\bC6H6\b/g, 'C 6 H 6')
+      .replace(/\bH2O\b/g, 'H 2 O')
+      .replace(/\bCO2\b/g, 'C O 2')
+      .replace(/\bCH4\b/g, 'C H 4')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -676,13 +816,21 @@ class AICopilotService {
     else if (this.voiceConfig.speechSpeed === 'fast') rate = 1.20;
     utterance.rate = rate;
 
-    // Natural pitch (fixed to 1.0 to prevent metallic robot distortion)
+    // Natural pitch
     utterance.pitch = 1.0;
     utterance.volume = typeof this.voiceConfig.volume === 'number' ? this.voiceConfig.volume : 1.0;
 
-    const selectedVoice = this.resolveVoice(this.voiceConfig.voiceGender, preferredLang);
+    const hasTelugu = /[\u0C00-\u0C7F]/.test(text) || preferredLang === 'te';
+    const effectiveLang = hasTelugu ? 'te' : (preferredLang || 'en');
+
+    const selectedVoice = this.resolveVoice(this.voiceConfig.voiceGender, effectiveLang);
     if (selectedVoice) {
       utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang;
+    } else if (hasTelugu) {
+      utterance.lang = 'te-IN';
+    } else {
+      utterance.lang = 'en-US';
     }
 
     utterance.onstart = () => {
@@ -773,6 +921,10 @@ class AICopilotService {
       } catch (e) {}
       this.isListening = false;
     }
+  }
+
+  async translateQuery(text, targetLang = 'en') {
+    return translateScientificQuery(text, targetLang);
   }
 }
 

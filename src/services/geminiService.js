@@ -6,9 +6,12 @@
 const DEFAULT_AI_KEY = '';
 
 export const AI_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-2.5-pro',
   'gemini-3.5-flash',
   'gemini-3.1-flash-lite',
-  'gemini-3.8-flash',
   'gemini-flash-latest'
 ];
 
@@ -20,6 +23,7 @@ Your capabilities include:
 4. Retrosynthetic reaction planning, reagents, catalysts, and mechanisms (SN1, SN2, EAS, aldol, peptide coupling).
 5. Computational chemistry, DFT wavefunctions, HOMO-LUMO bandgaps, and thermodynamic stability calculations.
 6. Assisting researchers, students, and computational chemists with accurate problem solving.
+7. Multilingual adaptability: understand and respond fluently in English, Telugu (తెలుగు), Hindi (हिन्दी), or mixed queries, preserving chemical notation and formulas.
 
 Formatting guidelines:
 - Present chemical formulas with proper sub/superscripts where applicable or standard notation (e.g., C9H8O4, H2SO4, ΔE = 4.12 eV).
@@ -27,10 +31,29 @@ Formatting guidelines:
 - Be friendly, authoritative, precise, and scientifically reliable. Always identify as ChemSpace AI.`;
 
 export function getGeminiApiKey() {
+  const custom = typeof localStorage !== 'undefined'
+    ? (localStorage.getItem('chemspace_gemini_key') || localStorage.getItem('chemspace_ai_key') || localStorage.getItem('gemini_api_key'))
+    : null;
+  if (custom && custom.trim()) return custom.trim();
+
   const envKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) ||
-                 (typeof import.meta !== 'undefined' && import.meta.env?.GEMINI_API_KEY) ||
-                 (typeof localStorage !== 'undefined' && (localStorage.getItem('chemspace_ai_key') || localStorage.getItem('chemspace_gemini_key') || localStorage.getItem('gemini_api_key')));
-  return envKey || DEFAULT_AI_KEY;
+                 (typeof import.meta !== 'undefined' && import.meta.env?.GEMINI_API_KEY);
+  return (envKey && envKey.trim()) || DEFAULT_AI_KEY;
+}
+
+export function setCustomGeminiApiKey(key) {
+  if (typeof localStorage === 'undefined') return;
+  if (key && key.trim()) {
+    localStorage.setItem('chemspace_gemini_key', key.trim());
+  } else {
+    localStorage.removeItem('chemspace_gemini_key');
+  }
+}
+
+export function hasCustomGeminiApiKey() {
+  if (typeof localStorage === 'undefined') return false;
+  const k = localStorage.getItem('chemspace_gemini_key') || localStorage.getItem('chemspace_ai_key');
+  return Boolean(k && k.trim());
 }
 
 /**

@@ -15,9 +15,24 @@ import {
   VolumeX,
   Radio,
   Paperclip,
-  FileText
+  FileText,
+  Key,
+  Check,
+  ExternalLink,
+  Languages,
+  RotateCcw,
+  FlaskConical,
+  Atom,
+  Binary,
+  Layers
 } from 'lucide-react';
 import { aiCopilot } from '../../services/aiCopilotService';
+import {
+  getGeminiApiKey,
+  setCustomGeminiApiKey,
+  hasCustomGeminiApiKey
+} from '../../services/geminiService';
+import { translateScientificQuery } from '../../services/languageDetector';
 import { useTheme } from '../../context/ThemeContext';
 import ChatMessage from './ChatMessage';
 import VoiceVisualizer from './VoiceVisualizer';
@@ -26,9 +41,36 @@ import AILoader from '../loading/AILoader';
 
 const INITIAL_WELCOME_MESSAGE = {
   role: 'assistant',
-  content: "Hello! I am **ChemSpace AI**, your chemistry and science assistant. I'm here to answer chemical concepts, solve calculations, explain mechanisms, analyze spectra, or explore scientific topics with you.\n\nHow can I help you today?",
+  content: "Hello! I am **ChemSpace Gemini AI**, your chemistry and science copilot. I can solve calculations, elucidate reaction mechanisms, calculate molecular properties, interpret spectra, or chat with you in **English or తెలుగు (Telugu)**.\n\nHow can I help you explore chemistry today?",
   timestamp: new Date().toISOString()
 };
+
+const GEMINI_SUGGESTION_PROMPTS = [
+  {
+    icon: FlaskConical,
+    title: 'Retrosynthesis & Reactions',
+    desc: 'Plan synthesis for Aspirin or Ibuprofen',
+    prompt: 'Show the retrosynthetic reaction pathway for Aspirin, including reagents, catalysts, and conditions.'
+  },
+  {
+    icon: Atom,
+    title: 'Molecular Descriptors',
+    desc: 'Calculate formula & properties for C8H10N4O2',
+    prompt: 'What is the molecular weight, canonical SMILES, and physicochemical properties of Caffeine (C8H10N4O2)?'
+  },
+  {
+    icon: Layers,
+    title: 'Reaction Mechanisms',
+    desc: 'Compare SN1 vs SN2 nucleophilic substitution',
+    prompt: 'Explain the difference between SN1 and SN2 reaction mechanisms with transition states and stereochemistry.'
+  },
+  {
+    icon: Languages,
+    title: 'తెలుగులో వివరణ (Telugu)',
+    desc: 'బెంజీన్ అరోమాటిసిటీ & Hückel నియమం',
+    prompt: 'బెంజీన్ (C6H6) అరోమాటిక్ లక్షణాలు మరియు Hückel నియమం (4n + 2) గురించి వివరించండి.'
+  }
+];
 
 export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
   const { theme } = useTheme();
@@ -47,6 +89,11 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
   const [abortController, setAbortController] = useState(null);
   const [attachedFile, setAttachedFile] = useState(null);
 
+  // Gemini API Key Modal
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [customKeyInput, setCustomKeyInput] = useState('');
+  const [keySavedMessage, setKeySavedMessage] = useState(false);
+
   // Voice States
   const [voiceConfig, setVoiceConfig] = useState(aiCopilot.getVoiceSettings());
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
@@ -54,6 +101,7 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
   const [micState, setMicState] = useState('idle'); // 'idle' | 'listening' | 'processing' | 'speaking'
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState('');
+  const [liveTranslatedEn, setLiveTranslatedEn] = useState('');
 
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
@@ -82,6 +130,12 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
     };
   }, []);
 
+  // Sync API Key input on mount
+  useEffect(() => {
+    const existing = typeof localStorage !== 'undefined' ? localStorage.getItem('chemspace_gemini_key') || '' : '';
+    setCustomKeyInput(existing);
+  }, []);
+
   // Listen for global custom event to open/un-minimize AI Copilot from any button
   useEffect(() => {
     const handleOpenCopilot = () => {
@@ -102,8 +156,17 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
     setVoiceConfig({ ...updated });
   };
 
+  const handleSaveApiKey = () => {
+    setCustomGeminiApiKey(customKeyInput);
+    setKeySavedMessage(true);
+    setTimeout(() => {
+      setKeySavedMessage(false);
+      setShowApiKeyModal(false);
+    }, 1500);
+  };
+
   /**
-   * CANCEL / STOP: Mandatory control to immediately cancel generation, voice playback, or recording
+   * CANCEL / STOP: Immediately cancel generation, voice playback, or recording
    */
   const handleStop = () => {
     if (abortController) {
@@ -116,16 +179,16 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
     setMicState('idle');
     setRecordingSeconds(0);
     setLiveTranscript('');
+    setLiveTranslatedEn('');
   };
 
   /**
-   * SEND ACTION: Streams response from backend or uses fallback
+   * SEND ACTION: Streams response from backend or uses Gemini / PubChem fallback
    */
   const handleSend = async (textOverride = null) => {
     const text = (textOverride || query).trim();
     if (!text && !attachedFile) return;
 
-    // Interrupt any active voice playback before new query
     aiCopilot.stopSpeaking();
 
     const currentAttached = attachedFile;
@@ -137,6 +200,7 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
     setQuery('');
     setAttachedFile(null);
     setLiveTranscript('');
+    setLiveTranslatedEn('');
     requestAnimationFrame(() => textareaRef.current?.focus());
 
     const userMessage = {
@@ -152,7 +216,6 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
     const controller = new AbortController();
     setAbortController(controller);
 
-    // Initial placeholder AI message
     const aiMessage = {
       role: 'assistant',
       content: '',
@@ -187,7 +250,6 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
           () => setMicState('speaking'),
           () => {
             setMicState('idle');
-            // If conversational hands-free loop active, listen for follow up
             if (voiceConfig.conversationalMode && !controller.signal.aborted) {
               setTimeout(() => {
                 startListeningSession();
@@ -206,7 +268,7 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
           const next = [...prev];
           next[next.length - 1] = {
             ...next[next.length - 1],
-            content: "I'm sorry, an unexpected error occurred while processing that request. Please try again."
+            content: "I'm sorry, an unexpected error occurred while processing that request. Please verify your connection or Gemini API key and try again."
           };
           return next;
         });
@@ -218,13 +280,14 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
   };
 
   /**
-   * VOICE RECOGNITION: Start speech-to-text
+   * VOICE RECOGNITION: Start speech-to-text with auto-translation
    */
   const startListeningSession = () => {
     aiCopilot.stopSpeaking();
     setMicState('listening');
     setRecordingSeconds(0);
     setLiveTranscript('');
+    setLiveTranslatedEn('');
 
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     recordingTimerRef.current = setInterval(() => {
@@ -235,10 +298,23 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
       (interim) => {
         setLiveTranscript(interim);
         setQuery(interim);
+        // If Telugu characters detected, create translation preview
+        if (/[\u0C00-\u0C7F]/.test(interim)) {
+          const trans = translateScientificQuery(interim, 'en');
+          if (trans && trans !== interim) {
+            setLiveTranslatedEn(trans);
+          }
+        }
       },
       (final) => {
         setLiveTranscript(final);
         setQuery(final);
+        if (/[\u0C00-\u0C7F]/.test(final)) {
+          const trans = translateScientificQuery(final, 'en');
+          if (trans && trans !== final) {
+            setLiveTranslatedEn(trans);
+          }
+        }
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
 
         if (voiceConfig.conversationalMode && final.trim().length > 1) {
@@ -291,7 +367,7 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
   };
 
   // =========================================================================
-  // 1. DEFAULT COLLAPSED / MINIMIZED STATE: Precision Circular AI Launcher
+  // 1. COLLAPSED / MINIMIZED LAUNCHER: Google Gemini Spark Button
   // =========================================================================
   if (!isOpen || isMinimized) {
     const isProcessing = isLoading || micState === 'processing';
@@ -299,56 +375,45 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
     const isSpeaking = micState === 'speaking';
 
     return (
-      <aside aria-label="ChemSpace AI Launcher" className="fixed bottom-6 right-6 z-50">
+      <aside aria-label="ChemSpace Gemini AI Launcher" className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => {
             setIsMinimized(false);
             if (onOpen) onOpen();
           }}
-          className={`relative w-12 h-12 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 select-none group border shadow-lg ${
+          className={`relative w-14 h-14 rounded-2xl flex items-center justify-center cursor-pointer transition-all duration-300 select-none group border shadow-xl ${
             isListening
-              ? 'bg-rose-600 text-white border-rose-300 shadow-[0_4px_24px_rgba(244,63,94,0.45)] animate-pulse'
+              ? 'bg-rose-600 text-white border-rose-300 shadow-[0_4px_28px_rgba(244,63,94,0.5)] animate-pulse'
               : isProcessing
-              ? 'bg-[#121622] text-amber-400 border-amber-500/40 shadow-[0_4px_24px_rgba(245,158,11,0.35)]'
+              ? 'bg-[#0f172a] text-sky-400 border-sky-500/40 shadow-[0_4px_28px_rgba(56,189,248,0.4)]'
               : isSpeaking
-              ? 'bg-emerald-600 text-white border-emerald-300 shadow-[0_4px_24px_rgba(16,185,129,0.45)]'
-              : 'bg-gradient-to-tr from-orange-600 via-amber-500 to-orange-400 text-white border-orange-300/40 shadow-[0_4px_20px_rgba(249,115,22,0.35)] hover:shadow-[0_6px_28px_rgba(249,115,22,0.55)] hover:scale-105 active:scale-95'
+              ? 'bg-emerald-600 text-white border-emerald-300 shadow-[0_4px_28px_rgba(16,185,129,0.5)]'
+              : 'bg-gradient-to-tr from-sky-500 via-indigo-600 to-rose-500 text-white border-sky-300/40 shadow-[0_4px_24px_rgba(56,189,248,0.35)] hover:shadow-[0_8px_32px_rgba(56,189,248,0.55)] hover:scale-105 active:scale-95'
           }`}
-          title={
-            isListening
-              ? 'ChemSpace AI (Listening...)'
-              : isProcessing
-              ? 'ChemSpace AI (Analyzing Chemistry...)'
-              : 'ChemSpace AI (Click to Open)'
-          }
-          aria-label="Open ChemSpace AI"
+          title="ChemSpace Gemini AI"
+          aria-label="Open ChemSpace Gemini AI"
         >
-          {/* Outer Orbital Ring with Contextual Motion */}
+          {/* Outer Ambient Glow Ring */}
           <span
-            className={`absolute -inset-1 rounded-full border pointer-events-none ${
-              isProcessing
-                ? 'border-amber-400/50 chemspace-orbit'
-                : isListening
+            className={`absolute -inset-1.5 rounded-2xl border pointer-events-none transition-all ${
+              isListening
                 ? 'border-rose-400/50 animate-ping opacity-30'
-                : 'border-orange-400/30 group-hover:border-orange-300/50 transition-colors'
+                : 'border-sky-400/30 group-hover:border-sky-300/60'
             }`}
           />
 
           {isProcessing ? (
-            /* Thinking / Processing: Dual orbital node cyclotron */
-            <div className="relative w-5 h-5 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-5 h-5 chemspace-orbit" fill="none">
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="14 10" />
-                <circle cx="12" cy="3" r="2" fill="#f97316" />
-                <circle cx="21" cy="12" r="1.5" fill="#10b981" />
-              </svg>
+            <div className="relative w-6 h-6 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-sky-300 animate-spin" />
             </div>
           ) : isListening ? (
-            <Mic className="w-5 h-5 text-white" />
+            <Mic className="w-6 h-6 text-white" />
           ) : isSpeaking ? (
-            <Volume2 className="w-5 h-5 text-white animate-pulse" />
+            <Volume2 className="w-6 h-6 text-white animate-pulse" />
           ) : (
-            <Sparkles className="w-5 h-5 text-white transition-transform duration-200 group-hover:rotate-12" />
+            <div className="relative flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+            </div>
           )}
         </button>
       </aside>
@@ -356,33 +421,56 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
   }
 
   // =========================================================================
-  // 2. EXPANDED FLOATING AI PANEL (Desktop & Mobile Responsive)
+  // 2. EXPANDED GOOGLE GEMINI STYLE WORKSPACE
   // =========================================================================
   return (
     <div
       role="dialog"
-      aria-label="ChemSpace AI Assistant"
-      className={`fixed z-50 glass-panel rounded-2xl border border-[var(--border-subtle)] shadow-2xl flex flex-col overflow-hidden transition-all duration-200 font-sans ${
+      aria-label="ChemSpace Gemini AI"
+      className={`fixed z-50 rounded-3xl border border-sky-500/30 shadow-[0_16px_64px_rgba(15,23,42,0.85)] flex flex-col overflow-hidden transition-all duration-300 font-sans backdrop-blur-2xl ${
         isMaximized
-          ? 'w-[calc(100vw-32px)] max-w-4xl h-[86vh] bottom-4 right-4 sm:bottom-6 sm:right-6'
-          : 'w-[440px] max-w-[calc(100vw-32px)] h-[620px] max-h-[calc(100vh-80px)] bottom-4 right-4 sm:bottom-6 sm:right-6'
+          ? 'w-[calc(100vw-24px)] max-w-5xl h-[88vh] bottom-3 right-3 sm:bottom-6 sm:right-6 bg-slate-950/95 text-slate-100'
+          : 'w-[620px] max-w-[calc(100vw-24px)] h-[740px] max-h-[calc(100vh-48px)] bottom-3 right-3 sm:bottom-6 sm:right-6 bg-slate-950/95 text-slate-100'
       }`}
     >
-      {/* ── HEADER: Clean ChemSpace AI branding + Controls ──────────────── */}
-      <div className="px-4 py-3 border-b border-inherit flex items-center justify-between bg-[var(--bg-card)] shrink-0 select-none">
-        {/* Left: ChemSpace AI only */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-            <Sparkles className="w-4 h-4" />
+      {/* ── HEADER: Google Gemini Branding + Pro Action Controls ──────── */}
+      <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-slate-900/80 shrink-0 select-none">
+        {/* Left: Gemini Spark & Title */}
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-400 via-indigo-500 to-rose-400 p-[1.5px] shadow-[0_0_16px_rgba(56,189,248,0.35)] shrink-0">
+            <div className="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-sky-400 animate-pulse" />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xs font-bold text-[var(--text-primary)]">ChemSpace AI</h2>
-            <span className="w-2 h-2 rounded-full bg-emerald-500" title="Online" />
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold bg-gradient-to-r from-sky-300 via-indigo-200 to-rose-300 bg-clip-text text-transparent">
+                ChemSpace Gemini AI
+              </h2>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                Online
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 font-medium">DeepChem Scientific Reasoning</p>
           </div>
         </div>
 
-        {/* Right: Action Controls */}
-        <div className="flex items-center gap-1 text-[var(--text-secondary)]">
+        {/* Right: Header Controls */}
+        <div className="flex items-center gap-1.5 text-slate-300">
+          {/* Gemini API Key Config */}
+          <button
+            onClick={() => setShowApiKeyModal(!showApiKeyModal)}
+            className={`px-2 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1 transition cursor-pointer border ${
+              hasCustomGeminiApiKey()
+                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                : 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-300'
+            }`}
+            title="Configure Google Gemini API Key"
+          >
+            <Key className="w-3 h-3 text-sky-400" />
+            <span>{hasCustomGeminiApiKey() ? 'API Key Active' : 'API Key'}</span>
+          </button>
+
           {/* Language Selector */}
           <select
             value={selectedLanguage}
@@ -390,13 +478,13 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
               setSelectedLanguage(e.target.value);
               aiCopilot.setLanguage(e.target.value);
             }}
-            className="px-2 py-1 rounded-lg text-[10px] bg-[var(--bg-inner)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] focus:outline-none cursor-pointer"
+            className="px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-800 border border-white/10 text-slate-200 hover:text-white focus:outline-none cursor-pointer"
             title="Language"
           >
-            <option value="auto">Auto</option>
+            <option value="auto">Auto (స్వయం)</option>
             <option value="en">English</option>
-            <option value="te">తెలుగు</option>
-            <option value="hi">हिन्दी</option>
+            <option value="te">తెలుగు (Telugu)</option>
+            <option value="hi">हिन्दी (Hindi)</option>
           </select>
 
           {/* Voice Settings Popover Toggle */}
@@ -404,10 +492,10 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
             onClick={() => setShowVoiceSettings(!showVoiceSettings)}
             className={`p-1.5 rounded-lg transition cursor-pointer ${
               showVoiceSettings || voiceConfig.voiceOutput
-                ? 'bg-emerald-500/20 text-emerald-400'
-                : 'hover:bg-white/5'
+                ? 'bg-sky-500/20 text-sky-400'
+                : 'hover:bg-white/10'
             }`}
-            title="Voice settings"
+            title="Voice & Audio Settings"
           >
             <Sliders className="w-3.5 h-3.5" />
           </button>
@@ -415,8 +503,8 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
           {/* Clear Conversation */}
           <button
             onClick={handleClearHistory}
-            className="p-1.5 rounded-lg hover:bg-white/5 transition cursor-pointer"
-            title="Clear chat"
+            className="p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer"
+            title="Clear Chat"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -424,22 +512,22 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
           {/* Maximize / Restore */}
           <button
             onClick={() => setIsMaximized(!isMaximized)}
-            className="p-1.5 rounded-lg hover:bg-white/5 transition hidden sm:inline-flex cursor-pointer"
-            title={isMaximized ? 'Restore' : 'Maximize'}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition hidden sm:inline-flex cursor-pointer"
+            title={isMaximized ? 'Restore Window' : 'Maximize Workspace'}
           >
             {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
 
-          {/* Mandatory Minimize Button: Collapses window, preserves conversation */}
+          {/* Minimize */}
           <button
             onClick={() => setIsMinimized(true)}
-            className="p-1.5 rounded-lg hover:bg-white/5 transition cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer"
             title="Minimize"
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
 
-          {/* Mandatory Close Button: Closes window, preserves state */}
+          {/* Close */}
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-rose-500/20 hover:text-rose-400 transition cursor-pointer"
@@ -450,34 +538,101 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
         </div>
       </div>
 
+      {/* ── GEMINI API KEY MODAL DIALOG ─────────────────────────────────── */}
+      {showApiKeyModal && (
+        <div className="px-5 py-4 bg-slate-900 border-b border-sky-500/30 text-xs animate-in fade-in duration-150">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-bold text-sky-300 flex items-center gap-1.5">
+              <Key className="w-4 h-4 text-sky-400" />
+              Google AI Studio / Gemini API Key Configuration
+            </span>
+            <button
+              onClick={() => setShowApiKeyModal(false)}
+              className="text-slate-400 hover:text-white cursor-pointer font-bold"
+            >
+              ✕
+            </button>
+          </div>
+          <p className="text-slate-400 text-[11px] mb-3 leading-relaxed">
+            Ensure ChemSpace AI runs with full generative power on online deployed sites (GitHub Pages, Cloudflare Pages). You can enter a free API key from Google AI Studio. Keys are stored locally in your browser.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={customKeyInput}
+              onChange={(e) => setCustomKeyInput(e.target.value)}
+              placeholder="Paste Google Gemini API Key (AIzaSy...)"
+              className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-400"
+            />
+            <button
+              onClick={handleSaveApiKey}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold cursor-pointer shadow-md flex items-center gap-1"
+            >
+              {keySavedMessage ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>Saved!</span>
+                </>
+              ) : (
+                'Save Key'
+              )}
+            </button>
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/10 text-[10px] text-slate-400">
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noreferrer"
+              className="text-sky-400 hover:underline flex items-center gap-1"
+            >
+              <span>Get Free Key at Google AI Studio</span>
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+            {hasCustomGeminiApiKey() && (
+              <button
+                onClick={() => {
+                  setCustomGeminiApiKey('');
+                  setCustomKeyInput('');
+                }}
+                className="text-rose-400 hover:underline cursor-pointer"
+              >
+                Clear Custom Key
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── VOICE SETTINGS PANEL (Popover) ─────────────────────────────── */}
       {showVoiceSettings && (
-        <div className="px-4 py-3 bg-[var(--bg-inner)] border-b border-inherit space-y-3 shrink-0 text-xs animate-in fade-in duration-150">
-          <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-1.5">
-            <span className="font-bold text-[var(--text-primary)]">Voice &amp; Audio Settings</span>
+        <div className="px-5 py-3.5 bg-slate-900 border-b border-sky-500/20 space-y-3 shrink-0 text-xs animate-in fade-in duration-150">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+            <span className="font-bold text-slate-200 flex items-center gap-1.5">
+              <Volume2 className="w-4 h-4 text-sky-400" />
+              Voice Synthesis &amp; Text-to-Speech Controls
+            </span>
             <button
               onClick={() => setShowVoiceSettings(false)}
-              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium text-xs cursor-pointer"
+              className="text-slate-400 hover:text-white font-medium text-xs cursor-pointer"
             >
               Done
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {/* Voice Style / Gender */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold block mb-1">
+              <label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block mb-1">
                 Voice Tone
               </label>
-              <div className="flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-0.5">
+              <div className="flex rounded-lg border border-white/10 bg-slate-950 p-0.5">
                 {['female', 'male', 'neutral'].map((g) => (
                   <button
                     key={g}
                     onClick={() => updateVoiceSetting('voiceGender', g)}
                     className={`flex-1 py-1 text-[10px] rounded-md font-semibold capitalize transition ${
                       voiceConfig.voiceGender === g
-                        ? 'bg-emerald-500 text-white shadow-sm'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        ? 'bg-sky-500 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     {g}
@@ -486,12 +641,11 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
               </div>
             </div>
 
-            {/* Speech Speed */}
             <div>
-              <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold block mb-1">
-                Speed
+              <label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block mb-1">
+                Speech Speed
               </label>
-              <div className="flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-0.5">
+              <div className="flex rounded-lg border border-white/10 bg-slate-950 p-0.5">
                 {[
                   { id: 'slow', label: '0.85x' },
                   { id: 'normal', label: '1.0x' },
@@ -502,8 +656,8 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
                     onClick={() => updateVoiceSetting('speechSpeed', s.id)}
                     className={`flex-1 py-1 text-[10px] rounded-md font-semibold transition ${
                       voiceConfig.speechSpeed === s.id
-                        ? 'bg-emerald-500 text-white shadow-sm'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        ? 'bg-sky-500 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     {s.label}
@@ -513,7 +667,6 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
             </div>
           </div>
 
-          {/* Voice Output Toggle & Hands-free Mode */}
           <div className="flex items-center justify-between pt-1">
             <button
               onClick={() => {
@@ -521,34 +674,79 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
                 updateVoiceSetting('voiceOutput', next);
                 if (!next) aiCopilot.stopSpeaking();
               }}
-              className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
                 voiceConfig.voiceOutput
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                  : 'bg-[var(--bg-card)] border-[var(--border-subtle)] text-[var(--text-secondary)]'
+                  ? 'bg-sky-500/20 text-sky-400 border-sky-500/40'
+                  : 'bg-slate-950 border-white/10 text-slate-400'
               }`}
             >
               {voiceConfig.voiceOutput ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-              <span>Voice Readout: {voiceConfig.voiceOutput ? 'ON' : 'OFF'}</span>
+              <span>Auto-Read Responses: {voiceConfig.voiceOutput ? 'ON' : 'OFF'}</span>
             </button>
 
             <button
               onClick={() => updateVoiceSetting('conversationalMode', !voiceConfig.conversationalMode)}
-              className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
                 voiceConfig.conversationalMode
-                  ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
-                  : 'bg-[var(--bg-card)] border-[var(--border-subtle)] text-[var(--text-secondary)]'
+                  ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40'
+                  : 'bg-slate-950 border-white/10 text-slate-400'
               }`}
-              title="Continuous conversational voice mode with automatic turn taking"
             >
-              <Radio className={`w-3.5 h-3.5 ${voiceConfig.conversationalMode ? 'animate-pulse text-cyan-400' : ''}`} />
-              <span>Hands-Free Loop</span>
+              <Radio className={`w-3.5 h-3.5 ${voiceConfig.conversationalMode ? 'animate-pulse text-indigo-400' : ''}`} />
+              <span>Continuous Voice Loop</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* ── CONVERSATION STREAM ────────────────────────────────────────── */}
-      <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-3 bg-[var(--bg-main)]">
+      {/* ── CONVERSATION STREAM / GEMINI WORKSPACE ──────────────────────── */}
+      <div ref={scrollRef} className="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-950/70">
+        {/* Gemini Welcome Hero when only initial message exists */}
+        {messages.length === 1 && (
+          <div className="py-6 px-2 text-center space-y-5 animate-in fade-in duration-300">
+            <div className="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-sky-500/20 via-indigo-500/20 to-rose-500/20 border border-sky-500/30 shadow-[0_0_24px_rgba(56,189,248,0.25)]">
+              <Sparkles className="w-8 h-8 text-sky-400 animate-pulse" />
+            </div>
+            <div className="space-y-1.5">
+              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-sky-300 via-indigo-200 to-rose-300 bg-clip-text text-transparent">
+                {selectedLanguage === 'te' ? 'నమస్కారం, కెమిస్ట్రీ పరిశోధకుడా' : 'Hello, Chemist'}
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
+                {selectedLanguage === 'te'
+                  ? 'మీ కెమిస్ట్రీ సమీకరణాలు, అణు నిర్మాణాలు, SMILES కోడ్‌లు లేదా రియాక్షన్ మెకానిజమ్స్ గురించి అడగండి.'
+                  : 'Ask any chemical question, calculate molecular properties, or explore reaction pathways in English or Telugu.'}
+              </p>
+            </div>
+
+            {/* 4 Gemini Quick Prompt Suggestion Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-xl mx-auto pt-2 text-left">
+              {GEMINI_SUGGESTION_PROMPTS.map((item, idx) => {
+                const IconComponent = item.icon;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => handleSend(item.prompt)}
+                    className="p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-sky-500/40 text-slate-200 transition-all cursor-pointer group shadow-sm hover:shadow-[0_4px_16px_rgba(56,189,248,0.15)] flex items-start gap-2.5"
+                  >
+                    <div className="w-7 h-7 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0 group-hover:scale-110 transition-transform">
+                      <IconComponent className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-slate-200 group-hover:text-sky-300 transition-colors">
+                        {item.title}
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate">
+                        {item.desc}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Chat Messages */}
         {messages.map((msg, idx) => (
           <ChatMessage
             key={idx}
@@ -560,11 +758,11 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
 
         {/* Live Listening Waveform */}
         {micState === 'listening' && (
-          <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 space-y-2 animate-in fade-in duration-150">
+          <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 space-y-2.5 animate-in fade-in duration-150">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-cyan-400 flex items-center gap-1.5">
-                <Mic className="w-3.5 h-3.5 animate-pulse" />
-                Listening...
+              <span className="text-xs font-bold text-sky-400 flex items-center gap-2">
+                <Mic className="w-4 h-4 animate-pulse text-rose-400" />
+                Listening in {selectedLanguage === 'te' ? 'Telugu (తెలుగు)' : 'English / Multilingual'}...
               </span>
               <VoiceVisualizer
                 state="listening"
@@ -573,19 +771,30 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
               />
             </div>
             {liveTranscript && (
-              <div className="text-xs text-[var(--text-primary)] italic bg-[var(--bg-card)] p-2 rounded-xl border border-cyan-500/20">
+              <div className="text-xs text-slate-200 italic bg-slate-900/90 p-2.5 rounded-xl border border-sky-500/20">
                 "{liveTranscript}"
+              </div>
+            )}
+            {liveTranslatedEn && (
+              <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-xs text-indigo-300">
+                <span>English: "{liveTranslatedEn}"</span>
+                <button
+                  onClick={() => setQuery(liveTranslatedEn)}
+                  className="px-2 py-0.5 rounded-lg bg-indigo-500/30 hover:bg-indigo-500/50 text-indigo-200 font-semibold text-[10px] cursor-pointer"
+                >
+                  Use English
+                </button>
               </div>
             )}
           </div>
         )}
 
-        {/* Speaking Waveform */}
+        {/* Speaking Notification */}
         {micState === 'speaking' && (
-          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between gap-3 text-xs">
-            <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
-              <Volume2 className="w-3.5 h-3.5 animate-pulse" />
-              ChemSpace AI is speaking
+          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3 text-xs">
+            <span className="text-emerald-400 font-semibold flex items-center gap-2">
+              <Volume2 className="w-4 h-4 animate-pulse" />
+              ChemSpace Gemini AI is speaking
             </span>
             <VoiceVisualizer state="speaking" onCancel={handleStop} />
           </div>
@@ -593,7 +802,7 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
 
         {/* Thinking Indicator */}
         {isLoading && !messages[messages.length - 1]?.content && (
-          <div className="py-1">
+          <div className="py-2">
             <AILoader onCancel={handleStop} />
           </div>
         )}
@@ -601,10 +810,10 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
 
       {/* ── ATTACHED FILE BADGE ────────────────────────────────────────── */}
       {attachedFile && (
-        <div className="px-4 py-1.5 border-t border-inherit bg-[var(--bg-inner)] flex items-center justify-between text-xs shrink-0">
-          <div className="flex items-center gap-1.5 text-emerald-400">
-            <FileText className="w-3.5 h-3.5" />
-            <span className="font-semibold truncate max-w-[280px]">{attachedFile.name}</span>
+        <div className="px-5 py-2 border-t border-white/10 bg-slate-900/90 flex items-center justify-between text-xs shrink-0">
+          <div className="flex items-center gap-2 text-sky-400">
+            <FileText className="w-4 h-4" />
+            <span className="font-semibold truncate max-w-[320px]">{attachedFile.name}</span>
           </div>
           <button
             onClick={() => setAttachedFile(null)}
@@ -615,36 +824,52 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
         </div>
       )}
 
-      {/* ── INPUT BAR ─────────────────────────────────────────────────── */}
-      <div className="p-3 border-t border-inherit bg-[var(--bg-card)] shrink-0">
-        <div className="relative flex items-center gap-1.5">
+      {/* ── GEMINI CAPSULE INPUT BAR ───────────────────────────────────── */}
+      <div className="p-4 border-t border-white/10 bg-slate-900/95 shrink-0">
+        {/* Translation shortcut pill if Telugu text is typed */}
+        {query && /[\u0C00-\u0C7F]/.test(query) && (
+          <div className="flex items-center justify-between mb-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-[11px] text-indigo-300">
+            <span>Telugu speech/text detected</span>
+            <button
+              onClick={() => {
+                const en = translateScientificQuery(query, 'en');
+                setQuery(en);
+              }}
+              className="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer underline"
+            >
+              Translate to English
+            </button>
+          </div>
+        )}
+
+        <div className="relative flex items-center gap-2 bg-slate-950 p-2 rounded-2xl border border-sky-500/25 focus-within:border-sky-400 focus-within:shadow-[0_0_20px_rgba(56,189,248,0.2)] transition-all">
           {/* File Input (Hidden) */}
           <input
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
-            accept=".py,.mol,.sdf,.xyz,.csv,.txt,.json,.log"
+            accept=".py,.mol,.sdf,.xyz,.csv,.txt,.json,.log,.smi"
             className="hidden"
           />
 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="p-2.5 rounded-xl bg-[var(--bg-inner)] hover:bg-[var(--bg-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-emerald-400 transition cursor-pointer shrink-0"
-            title="Attach file"
+            className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-sky-400 transition cursor-pointer shrink-0"
+            title="Attach molecule or code file"
           >
-            <Paperclip className="w-3.5 h-3.5" />
+            <Paperclip className="w-4 h-4" />
           </button>
 
-          {/* Premium Circular Voice Action Button */}
+          {/* Voice Input Button */}
           <CircularVoiceButton
             state={micState}
             onClick={toggleMic}
             size="sm"
-            title={micState === 'listening' ? 'Stop listening' : 'Voice input (Listen)'}
+            title={micState === 'listening' ? 'Stop listening' : 'Speak (Speech-to-Text in English/Telugu)'}
           />
 
-          {/* Auto-expanding Input Area */}
+          {/* Multiline Input Area */}
           <textarea
             ref={textareaRef}
             rows={1}
@@ -656,29 +881,47 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
                 handleSend();
               }
             }}
-            placeholder="Ask a question or request a calculation..."
-            className="input-control flex-1 py-2 px-3 rounded-xl text-xs text-[var(--text-primary)] min-w-0 resize-none max-h-28 overflow-y-auto leading-relaxed"
+            placeholder={
+              selectedLanguage === 'te'
+                ? 'ఏదైనా కెమిస్ట్రీ ప్రశ్నను అడగండి లేదా మాట్లాడండి...'
+                : 'Ask ChemSpace Gemini AI or speak in any language...'
+            }
+            className="flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 bg-transparent min-w-0 resize-none max-h-32 overflow-y-auto leading-relaxed focus:outline-none"
           />
 
-          {/* Send / Stop Action Button with arrow/icon micro-interaction */}
+          {/* Auto-Read Toggle Indicator */}
+          <button
+            type="button"
+            onClick={() => updateVoiceSetting('voiceOutput', !voiceConfig.voiceOutput)}
+            className={`p-2 rounded-xl transition cursor-pointer shrink-0 ${
+              voiceConfig.voiceOutput
+                ? 'bg-sky-500/20 text-sky-400'
+                : 'text-slate-500 hover:text-slate-400'
+            }`}
+            title={`Auto-Read TTS: ${voiceConfig.voiceOutput ? 'ON' : 'OFF'}`}
+          >
+            {voiceConfig.voiceOutput ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </button>
+
+          {/* Send / Stop Button */}
           {isLoading || micState === 'speaking' ? (
             <button
               type="button"
               onClick={handleStop}
-              className="p-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white transition shrink-0 cursor-pointer shadow-sm active:scale-95"
-              title="Stop"
+              className="p-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white transition shrink-0 cursor-pointer shadow-md active:scale-95"
+              title="Stop Generation / Audio"
             >
-              <Square className="w-3.5 h-3.5 fill-current" />
+              <Square className="w-4 h-4 fill-current" />
             </button>
           ) : (
             <button
               type="button"
               onClick={() => handleSend()}
               disabled={!query.trim() && !attachedFile}
-              className="group p-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white transition disabled:opacity-30 disabled:pointer-events-none shrink-0 cursor-pointer shadow-[0_2px_12px_rgba(249,115,22,0.3)] hover:shadow-[0_4px_18px_rgba(249,115,22,0.45)] active:scale-95 border border-orange-400/30"
-              title="Send"
+              className="p-2.5 rounded-xl bg-gradient-to-r from-sky-500 via-indigo-600 to-rose-500 hover:opacity-90 text-white transition disabled:opacity-30 disabled:pointer-events-none shrink-0 cursor-pointer shadow-[0_2px_14px_rgba(56,189,248,0.35)] active:scale-95"
+              title="Send to Gemini"
             >
-              <Send className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+              <Send className="w-4 h-4" />
             </button>
           )}
         </div>
