@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Bot, User, Copy, Check, Volume2, VolumeX, RotateCcw, Terminal, BookOpen, Globe, Wrench, ExternalLink, Sparkles, Languages } from 'lucide-react';
+import { User, Copy, Check, Volume2, VolumeX, RotateCcw, BookOpen, Globe, Sparkles, Atom } from 'lucide-react';
 import { isSmilesString } from '../../services/chemicalResolver';
 import { aiCopilot } from '../../services/aiCopilotService';
-import { translateScientificQuery, detectLanguage } from '../../services/languageDetector';
 import FormattedAIResponse from '../common/FormattedAIResponse';
 
 function InlineCodePill({ code }) {
@@ -18,16 +17,16 @@ function InlineCodePill({ code }) {
 
   return (
     <span className="inline-flex items-center gap-1 mx-0.5 align-middle">
-      <code className="px-1.5 py-0.5 rounded-md bg-[var(--bg-inner)] border border-[var(--border-subtle)] text-sky-600 dark:text-sky-400 font-mono text-[11px] font-semibold">
+      <code className="px-1.5 py-0.5 rounded-md bg-[var(--bg-inner)] border border-[var(--border-subtle)] text-orange-600 dark:text-orange-400 font-mono text-[11px] font-semibold">
         {code}
       </code>
       {isSmiles && (
         <button
           onClick={handleCopy}
-          className="p-0.5 rounded hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-sky-400 transition cursor-pointer"
+          className="p-0.5 rounded hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-orange-400 transition cursor-pointer"
           title="Copy SMILES"
         >
-          {copied ? <Check className="w-2.5 h-2.5 text-sky-500" /> : <Copy className="w-2.5 h-2.5" />}
+          {copied ? <Check className="w-2.5 h-2.5 text-emerald-500" /> : <Copy className="w-2.5 h-2.5" />}
         </button>
       )}
     </span>
@@ -38,13 +37,8 @@ export default function ChatMessage({ message, isLast, onRegenerate }) {
   const isAI = message.role === 'assistant';
   const [copied, setCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [codeCopied, setCodeCopied] = useState(false);
-  const [showTranslated, setShowTranslated] = useState(false);
-  const [translatedContent, setTranslatedContent] = useState('');
 
-  const displayedContent = showTranslated && translatedContent ? translatedContent : message.content;
-  const langInfo = detectLanguage(message.content || '');
-  const isTelugu = langInfo.code === 'te' || /[\u0C00-\u0C7F]/.test(message.content || '');
+  const displayedContent = message.content;
 
   const handleCopy = () => {
     if (!displayedContent) return;
@@ -60,69 +54,53 @@ export default function ChatMessage({ message, isLast, onRegenerate }) {
       setIsSpeaking(false);
     } else {
       setIsSpeaking(true);
-      const targetLang = isTelugu ? 'te' : 'en';
       aiCopilot.speak(
         displayedContent,
         () => setIsSpeaking(true),
         () => setIsSpeaking(false),
         () => setIsSpeaking(false),
-        targetLang
+        'en'
       );
     }
   };
 
-  const handleToggleTranslate = () => {
-    if (showTranslated) {
-      setShowTranslated(false);
-      return;
-    }
-    if (!translatedContent) {
-      const targetLang = isTelugu ? 'en' : 'te';
-      const result = translateScientificQuery(message.content || '', targetLang);
-      setTranslatedContent(result);
-    }
-    setShowTranslated(true);
-  };
-
   return (
     <div className={`flex gap-3 mb-4 ${isAI ? 'justify-start' : 'justify-end'} group`}>
-      {/* ── GEMINI AI AVATAR ────────────────────────────────────────────── */}
+      {/* ── CHEMSPACE AI AVATAR ─────────────────────────────────────────── */}
       {isAI && (
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-400 via-indigo-500 to-rose-400 p-[1.5px] shadow-[0_2px_12px_rgba(56,189,248,0.25)] shrink-0 mt-0.5">
-          <div className="w-full h-full rounded-[10px] bg-slate-900/90 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-sky-300 animate-pulse" />
-          </div>
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0 mt-0.5">
+          <Atom className="w-4 h-4 animate-spin-slow" />
         </div>
       )}
 
       <div className={`max-w-[88%] sm:max-w-[82%] space-y-1.5 ${isAI ? '' : 'flex flex-col items-end'}`}>
-        {/* RAG, Web Research & Model Badges */}
+        {/* Model & Source Badges */}
         {isAI && (message.metadata?.mode || (message.tools && message.tools.length > 0) || (message.citations && message.citations.length > 0)) && (
           <div className="flex flex-wrap items-center gap-1.5 mb-1 select-none">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20">
-              <Sparkles className="w-2.5 h-2.5 text-sky-400" />
-              {message.metadata?.model || 'Gemini 2.5'}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
+              <Sparkles className="w-2.5 h-2.5 text-orange-400" />
+              {message.metadata?.model || 'DeepChem-3.8'}
             </span>
             {message.metadata?.mode === 'web_research_plus_rag' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20">
                 <Globe className="w-2.5 h-2.5" />
-                Web Research
+                Live Literature
               </span>
             )}
             {(message.metadata?.mode === 'rag_knowledge_base' || (message.citations && message.citations.length > 0 && message.metadata?.mode !== 'web_research_plus_rag')) && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <BookOpen className="w-2.5 h-2.5" />
-                Knowledge Base
+                NCBI PubChem Verified
               </span>
             )}
           </div>
         )}
 
         <div
-          className={`relative p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed ${
+          className={`relative p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed transition-colors ${
             isAI
               ? 'bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-tl-sm shadow-md'
-              : 'bg-gradient-to-r from-sky-600 to-indigo-600 text-white rounded-tr-sm shadow-md font-medium'
+              : 'bg-orange-500 text-white rounded-tr-sm shadow-md font-medium'
           }`}
         >
           {isAI ? (
@@ -134,14 +112,14 @@ export default function ChatMessage({ message, isLast, onRegenerate }) {
           {/* Citations / Sources */}
           {isAI && message.citations && message.citations.length > 0 && (
             <div className="mt-3 pt-2.5 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] space-y-1">
-              <div className="flex items-center gap-1 font-semibold uppercase tracking-wider text-[9px] text-[var(--text-secondary)]">
-                <BookOpen className="w-2.5 h-2.5 text-sky-400" />
-                Verified Sources
+              <div className="flex items-center gap-1 font-semibold uppercase tracking-wider text-[9px] text-[var(--text-secondary)] font-mono">
+                <BookOpen className="w-2.5 h-2.5 text-orange-400" />
+                Verified Citations &amp; Registries
               </div>
               <div className="space-y-1">
                 {message.citations.map((c, idx) => (
                   <div key={idx} className="flex items-start gap-1.5">
-                    <span className="text-sky-400 font-mono text-[10px]">[{idx + 1}]</span>
+                    <span className="text-orange-400 font-mono text-[10px]">[{idx + 1}]</span>
                     <span className="text-[var(--text-primary)] font-medium">
                       {c.title || c.source}
                       {c.domain && <span className="ml-1 text-[var(--text-muted)] font-normal font-mono text-[10px]">({c.domain})</span>}
@@ -153,75 +131,59 @@ export default function ChatMessage({ message, isLast, onRegenerate }) {
           )}
         </div>
 
-        {/* ── ALWAYS-VISIBLE GEMINI ACTION ROW (TTS, COPY, TRANSLATE) ──────── */}
+        {/* ── CONTEXTUAL ACTION ROW: APPEARS ON HOVER ─────────────────────── */}
         {isAI && message.content && (
-          <div className="flex items-center gap-2 pt-0.5 px-1 select-none text-[11px] text-[var(--text-muted)]">
-            {/* Text-to-Speech (TTS) Button with live waveform */}
-            <button
-              onClick={handleToggleSpeech}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer font-medium border ${
-                isSpeaking
-                  ? 'bg-sky-500/15 border-sky-500/40 text-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
-                  : 'bg-[var(--bg-inner)] border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] hover:text-sky-400'
-              }`}
-              title={isSpeaking ? 'Stop speaking' : 'Read aloud with Text-to-Speech'}
-            >
-              {isSpeaking ? (
-                <>
-                  <VolumeX className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-                  <span className="flex items-center gap-0.5">
-                    <span className="w-1 h-2.5 bg-sky-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                    <span className="w-1 h-3.5 bg-sky-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                    <span className="w-1 h-2 bg-sky-400 rounded-full animate-bounce [animation-delay:300ms]" />
-                  </span>
-                  <span>Stop</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="w-3.5 h-3.5" />
-                  <span>{isTelugu ? 'వినండి (Listen)' : 'Listen'}</span>
-                </>
-              )}
-            </button>
-
+          <div className="flex items-center gap-1.5 pt-0.5 px-1 select-none text-[11px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             {/* Copy Button */}
             <button
+              type="button"
               onClick={handleCopy}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--bg-inner)] border border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition cursor-pointer"
-              title="Copy response"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--bg-inner)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-orange-400 hover:border-orange-500/30 transition cursor-pointer"
+              title="Copy answer"
             >
               {copied ? (
                 <>
                   <Check className="w-3 h-3 text-emerald-400" />
-                  <span className="text-emerald-400">Copied</span>
+                  <span className="text-emerald-400 font-mono text-[10px]">Copied</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3 h-3" />
-                  <span>Copy</span>
+                  <span className="font-mono text-[10px]">Copy</span>
                 </>
               )}
             </button>
 
-            {/* Translate Button */}
+            {/* Text-to-Speech (TTS) Listen Button */}
             <button
-              onClick={handleToggleTranslate}
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg transition cursor-pointer border ${
-                showTranslated
-                  ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-400'
-                  : 'bg-[var(--bg-inner)] border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] hover:text-indigo-400'
+              type="button"
+              onClick={handleToggleSpeech}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition cursor-pointer font-mono text-[10px] border ${
+                isSpeaking
+                  ? 'bg-orange-500/15 border-orange-500/40 text-orange-400'
+                  : 'bg-[var(--bg-inner)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-orange-400 hover:border-orange-500/30'
               }`}
-              title={showTranslated ? 'Show original' : (isTelugu ? 'Translate to English' : 'తెలుగులోకి అనువదించండి')}
+              title={isSpeaking ? 'Stop speaking' : 'Listen with Text-to-Speech'}
             >
-              <Languages className="w-3 h-3" />
-              <span>{showTranslated ? 'Original' : (isTelugu ? 'To English' : 'తెలుగు')}</span>
+              {isSpeaking ? (
+                <>
+                  <VolumeX className="w-3 h-3 text-orange-400 animate-pulse" />
+                  <span>Stop</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-3 h-3" />
+                  <span>Listen</span>
+                </>
+              )}
             </button>
 
             {/* Regenerate Button */}
             {isLast && onRegenerate && (
               <button
+                type="button"
                 onClick={onRegenerate}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--bg-inner)] border border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--bg-inner)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-orange-400 hover:border-orange-500/30 transition cursor-pointer font-mono text-[10px]"
                 title="Regenerate response"
               >
                 <RotateCcw className="w-3 h-3" />

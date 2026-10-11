@@ -68,8 +68,7 @@ Never fabricate scientific facts, molecular structures, calculations, or citatio
 When uncertain, say so honestly.
 Use available chemistry tools only when the user requests or when genuinely needed.
 Use web search only when current information is required and the web-search tool is available.
-Respond naturally and conversationally.
-Adapt language to the user (English, Telugu, Hindi, or mixed queries), preserving chemical formulas (e.g. C6H6), SMILES, and scientific units (e.g. g/mol) in standard notation.
+Respond strictly in clear, professional scientific English, preserving chemical formulas (e.g. C6H6), SMILES, and scientific units (e.g. g/mol) in standard notation.
 Be helpful, clear, and scientifically responsible.`;
 
 const DEFAULT_VOICE_CONFIG = {
