@@ -13,7 +13,7 @@ export default function GestureTutorialModal() {
       gesture: 'Virtual Air Cursor',
       action: 'Point index finger at the screen to guide the virtual cursor smoothly.',
       icon: MousePointer,
-      color: '#06b6d4'
+      color: '#f97316'
     },
     {
       title: 'Pinch (Thumb + Index)',
@@ -34,7 +34,7 @@ export default function GestureTutorialModal() {
       gesture: 'Page Navigation',
       action: 'Swipe your hand briskly left or right to navigate between sections and history.',
       icon: ArrowLeftRight,
-      color: '#3b82f6'
+      color: '#ea580c'
     },
     {
       title: 'Two-Hand Spread / Close',
@@ -61,11 +61,11 @@ export default function GestureTutorialModal() {
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl rounded-3xl bg-[#0d0e12] border border-cyan-500/30 p-6 shadow-2xl shadow-cyan-950/50 space-y-6 text-white font-sans">
+      <div className="w-full max-w-2xl rounded-3xl bg-[#0d0e12] border border-orange-500/30 p-6 shadow-2xl shadow-orange-950/40 space-y-6 text-white font-sans">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <div className="w-10 h-10 rounded-2xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-orange-400 shadow-sm shadow-orange-500/20">
               <Hand className="w-5 h-5" />
             </div>
             <div>
@@ -93,7 +93,7 @@ export default function GestureTutorialModal() {
             return (
               <div
                 key={idx}
-                className="p-3.5 rounded-2xl bg-neutral-900/80 border border-white/10 space-y-1.5 transition-all hover:border-cyan-500/40"
+                className="p-3.5 rounded-2xl bg-neutral-900/80 border border-white/10 space-y-1.5 transition-all hover:border-orange-500/40"
               >
                 <div className="flex items-center gap-2">
                   <div
@@ -110,7 +110,7 @@ export default function GestureTutorialModal() {
                     <span className="text-xs font-bold font-mono text-white block">
                       {item.title}
                     </span>
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-orange-400">
                       {item.gesture}
                     </span>
                   </div>
@@ -132,7 +132,7 @@ export default function GestureTutorialModal() {
 
           <button
             onClick={closeTutorial}
-            className="px-5 py-2 rounded-xl bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition cursor-pointer"
+            className="px-5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-orange-500/20 transition cursor-pointer"
           >
             Got It
           </button>

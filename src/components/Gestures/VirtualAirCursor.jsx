@@ -16,7 +16,7 @@ export default function VirtualAirCursor() {
     ? '#f59e0b' // Amber when scrolling
     : currentMode === 'ZOOM'
     ? '#8b5cf6' // Purple when zooming
-    : '#06b6d4'; // Cyan default
+    : '#f97316'; // Signature ChemSpace Warm Orange default
 
   return (
     <div

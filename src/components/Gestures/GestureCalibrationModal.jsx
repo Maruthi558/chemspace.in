@@ -35,11 +35,11 @@ export default function GestureCalibrationModal() {
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-3xl bg-[#0d0e12] border border-cyan-500/30 p-6 shadow-2xl shadow-cyan-950/50 space-y-6 text-white font-sans">
+      <div className="w-full max-w-lg rounded-3xl bg-[#0d0e12] border border-orange-500/30 p-6 shadow-2xl shadow-orange-950/40 space-y-6 text-white font-sans">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <div className="w-10 h-10 rounded-2xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-orange-400 shadow-sm shadow-orange-500/20">
               <Sliders className="w-5 h-5" />
             </div>
             <div>
@@ -66,7 +66,7 @@ export default function GestureCalibrationModal() {
           <div className="space-y-2 p-3.5 rounded-2xl bg-neutral-900/60 border border-white/10">
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="font-bold text-neutral-200">Cursor Sensitivity:</span>
-              <span className="text-cyan-400 font-bold">{localSens.toFixed(1)}x</span>
+              <span className="text-orange-400 font-bold">{localSens.toFixed(1)}x</span>
             </div>
             <input
               type="range"
@@ -75,7 +75,7 @@ export default function GestureCalibrationModal() {
               step="0.1"
               value={localSens}
               onChange={(e) => setLocalSens(parseFloat(e.target.value))}
-              className="w-full accent-cyan-400 cursor-pointer"
+              className="w-full accent-orange-500 cursor-pointer"
             />
             <div className="flex justify-between text-[10px] font-mono text-neutral-500">
               <span>0.5x (Precision)</span>
@@ -88,7 +88,7 @@ export default function GestureCalibrationModal() {
           <div className="space-y-2 p-3.5 rounded-2xl bg-neutral-900/60 border border-white/10">
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="font-bold text-neutral-200">Anti-Jitter Smoothing:</span>
-              <span className="text-cyan-400 font-bold">{Math.round(smoothing * 100)}%</span>
+              <span className="text-orange-400 font-bold">{Math.round(smoothing * 100)}%</span>
             </div>
             <input
               type="range"
@@ -97,7 +97,7 @@ export default function GestureCalibrationModal() {
               step="0.05"
               value={smoothing}
               onChange={(e) => setSmoothing(parseFloat(e.target.value))}
-              className="w-full accent-cyan-400 cursor-pointer"
+              className="w-full accent-orange-500 cursor-pointer"
             />
             <div className="flex justify-between text-[10px] font-mono text-neutral-500">
               <span>Low Latency</span>
@@ -110,7 +110,7 @@ export default function GestureCalibrationModal() {
           <div className="space-y-2 p-3.5 rounded-2xl bg-neutral-900/60 border border-white/10">
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="font-bold text-neutral-200">Pinch Trigger Distance:</span>
-              <span className="text-cyan-400 font-bold">{Math.round(clickThreshold * 100)}%</span>
+              <span className="text-orange-400 font-bold">{Math.round(clickThreshold * 100)}%</span>
             </div>
             <input
               type="range"
@@ -119,7 +119,7 @@ export default function GestureCalibrationModal() {
               step="0.02"
               value={clickThreshold}
               onChange={(e) => setClickThreshold(parseFloat(e.target.value))}
-              className="w-full accent-cyan-400 cursor-pointer"
+              className="w-full accent-orange-500 cursor-pointer"
             />
             <p className="text-[10px] font-sans text-neutral-400">
               Adjusts how closely your thumb and index fingertip must touch to trigger a click.
@@ -149,11 +149,11 @@ export default function GestureCalibrationModal() {
             <button
               onClick={handleSave}
               type="button"
-              className="px-5 py-2 rounded-xl bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-xs uppercase tracking-wider hover:from-orange-600 hover:to-amber-600 transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-orange-500/20"
             >
               {savedSuccess ? (
                 <>
-                  <Check className="w-4 h-4 text-emerald-600" />
+                  <Check className="w-4 h-4 text-emerald-300" />
                   <span>Calibrated!</span>
                 </>
               ) : (

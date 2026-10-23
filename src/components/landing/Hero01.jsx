@@ -71,9 +71,9 @@ export function Hero01({ className = "" }) {
           <nav className="hidden md:flex items-center gap-5 text-xs font-mono">
             <button
               onClick={() => navigate("/ai-workspace")}
-              className="text-cyan-400 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1.5 font-bold"
+              className="text-[var(--text-secondary)] hover:text-orange-400 transition cursor-pointer flex items-center gap-1.5 font-bold"
             >
-              <Bot className="w-3.5 h-3.5 text-cyan-400" />
+              <Bot className="w-3.5 h-3.5 text-orange-400" />
               <span>AI Workspace</span>
             </button>
             <button
@@ -117,12 +117,12 @@ export function Hero01({ className = "" }) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate("/ai-workspace")}
-              className="hidden sm:flex px-2.5 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-xs font-mono font-bold text-cyan-400 hover:text-cyan-300 transition cursor-pointer items-center gap-1.5 shadow-xs"
+              className="hidden sm:flex px-2.5 py-1.5 rounded-xl border border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 text-xs font-mono font-bold text-orange-400 hover:text-orange-300 transition cursor-pointer items-center gap-1.5 shadow-xs"
               title="Open AI Workspace"
             >
-              <Bot className="w-3.5 h-3.5 text-cyan-400" />
+              <Bot className="w-3.5 h-3.5 text-orange-400" />
               <span>AI Workspace</span>
-              <span className="text-[9px] px-1 rounded bg-cyan-400/20 text-cyan-300">AGENTIC</span>
+              <span className="text-[9px] px-1 rounded bg-orange-400/20 text-orange-300">AGENTIC</span>
             </button>
 
             <button
@@ -136,10 +136,10 @@ export function Hero01({ className = "" }) {
 
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-manual'))}
-              className="px-2.5 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-xs font-mono font-bold text-cyan-300 hover:text-white transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+              className="px-2.5 py-1.5 rounded-xl border border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 text-xs font-mono font-bold text-orange-400 hover:text-orange-300 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
               title="Open Platform User Manual & Button Guide"
             >
-              <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+              <BookOpen className="w-3.5 h-3.5 text-orange-400" />
               <span>Manual</span>
             </button>
 
@@ -412,14 +412,14 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
       <div className="mb-6 flex flex-wrap items-center gap-3 sm:mb-8">
         <Button
           onClick={() => navigate("/ai-workspace")}
-          className="bg-gradient-to-r from-cyan-500 via-sky-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white font-extrabold border border-cyan-300/40 px-6 sm:px-7 py-3 rounded-xl shadow-lg shadow-cyan-500/30 cursor-pointer text-sm flex items-center gap-2 active:scale-95 transition relative overflow-hidden group"
+          className="bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 hover:from-orange-500 hover:to-amber-400 text-white font-extrabold border-none px-6 sm:px-7 py-3 rounded-xl shadow-lg shadow-orange-500/25 cursor-pointer text-sm flex items-center gap-2 active:scale-95 transition relative overflow-hidden group"
           size="lg"
         >
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
           </span>
-          <Bot className="w-4 h-4 text-cyan-100 group-hover:rotate-12 transition-transform" />
+          <Bot className="w-4 h-4 text-white group-hover:rotate-12 transition-transform" />
           <span>AI Workspace</span>
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white font-semibold">
             AGENTIC AI
@@ -446,11 +446,11 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
 
         <Button
           onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-manual'))}
-          className="bg-gradient-to-r from-cyan-900/40 via-sky-900/30 to-teal-900/40 hover:from-cyan-800/50 hover:to-teal-800/50 text-cyan-200 hover:text-white font-bold border border-cyan-400/40 px-5 sm:px-6 py-3 rounded-xl shadow-lg shadow-cyan-950/40 cursor-pointer text-sm flex items-center gap-2 active:scale-95 transition"
+          className="bg-[var(--bg-card)] hover:bg-[var(--bg-inner)] text-[var(--text-primary)] hover:text-orange-500 font-bold border border-[var(--border-subtle)] hover:border-orange-500/60 px-5 sm:px-6 py-3 rounded-xl shadow-sm cursor-pointer text-sm flex items-center gap-2 active:scale-95 transition"
           size="lg"
           title="Open ChemSpace User Manual & Platform Guide"
         >
-          <BookOpen className="w-4 h-4 text-cyan-400 animate-pulse" />
+          <BookOpen className="w-4 h-4 text-orange-500 animate-pulse" />
           <span>Platform Manual &amp; Guide</span>
         </Button>
 
@@ -472,7 +472,7 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
       {/* Core Scientific Technology Engine Strip */}
       <div className="relative -ml-4 lg:ml-0 pt-2 border-t border-[var(--border-subtle)]">
         <div className="no-scrollbar flex items-center gap-6 overflow-x-auto px-4 lg:px-0 py-1">
-          <TechItem icon={<Bot className="w-4 h-4 text-cyan-400" />} title="LiteFold DAG Agent" />
+          <TechItem icon={<Bot className="w-4 h-4 text-orange-400" />} title="LiteFold DAG Agent" />
           <TechItem icon={<Box className="w-4 h-4 text-sky-400" />} title="Nomosis 3D Studio" />
           <TechItem icon={<Cpu className="w-4 h-4 text-emerald-500" />} title="RDKit WASM" />
           <TechItem icon={<Zap className="w-4 h-4 text-violet-500" />} title="DFT Quantum" />

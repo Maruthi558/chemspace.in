@@ -914,7 +914,7 @@ export default function IbmRxnUnifiedStudio() {
           <div className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-inherit pb-3 flex-wrap gap-3">
               <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-cyan-400" />
+                <BookOpen className="w-5 h-5 text-orange-400" />
                 <div>
                   <h2 className="text-sm font-black uppercase text-[var(--text-primary)] tracking-wide">
                     ARXN Organic Reaction Synthesis &amp; Transformation Catalog
@@ -925,7 +925,7 @@ export default function IbmRxnUnifiedStudio() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-xl bg-cyan-500/15 text-cyan-300 font-mono text-[10px] font-bold border border-cyan-500/30">
+                <span className="px-2.5 py-1 rounded-xl bg-orange-500/15 text-orange-300 font-mono text-[10px] font-bold border border-orange-500/30">
                   {filteredLibraryReactions.length} Reactions Available
                 </span>
               </div>

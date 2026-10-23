@@ -36,14 +36,14 @@ export default function GestureControlPanel({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-16 right-4 sm:right-6 z-[99990] w-80 rounded-3xl bg-[#0c0d12]/95 border border-cyan-500/30 p-5 shadow-2xl shadow-cyan-950/60 backdrop-blur-xl select-none font-sans text-white animate-in slide-in-from-top-4 duration-200">
+    <div className="fixed top-16 right-4 sm:right-6 z-[99990] w-80 rounded-3xl bg-[#0c0d12]/95 border border-orange-500/30 p-5 shadow-2xl shadow-orange-950/40 backdrop-blur-xl select-none font-sans text-white animate-in slide-in-from-top-4 duration-200">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <div className="flex items-center gap-2.5">
           <div
             className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
               isEnabled
-                ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
                 : 'bg-neutral-800 border-neutral-700 text-neutral-400'
             }`}
           >
@@ -53,7 +53,7 @@ export default function GestureControlPanel({ isOpen, onClose }) {
             <h3 className="text-xs font-black tracking-wider uppercase font-mono text-white">
               TOUCHLESS GESTURES
             </h3>
-            <span className="text-[9px] font-mono text-cyan-400 block">
+            <span className="text-[9px] font-mono text-orange-400 block">
               Spatial Vision Controller
             </span>
           </div>
@@ -65,7 +65,7 @@ export default function GestureControlPanel({ isOpen, onClose }) {
           type="button"
           className={`px-3 py-1.5 rounded-xl font-mono text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-sm ${
             isEnabled
-              ? 'bg-emerald-500 text-black hover:bg-emerald-400'
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20'
               : 'bg-white/10 text-neutral-300 hover:bg-white/20 border border-white/20'
           }`}
         >
@@ -119,7 +119,7 @@ export default function GestureControlPanel({ isOpen, onClose }) {
             <div className="flex items-center gap-1.5">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  handDetected ? 'bg-cyan-400 animate-pulse' : 'bg-neutral-600'
+                  handDetected ? 'bg-orange-400 animate-pulse' : 'bg-neutral-600'
                 }`}
               />
               <span className="font-bold text-[11px] text-white">
@@ -137,7 +137,7 @@ export default function GestureControlPanel({ isOpen, onClose }) {
               className={`font-bold px-1.5 py-0.5 rounded text-[9px] uppercase tracking-widest ${
                 isPaused
                   ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                  : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                  : 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
               }`}
             >
               {isPaused ? 'PAUSED' : currentMode}
@@ -153,7 +153,7 @@ export default function GestureControlPanel({ isOpen, onClose }) {
       <div className="mt-3 p-2.5 rounded-xl bg-neutral-900/80 border border-white/10 space-y-1.5">
         <div className="flex items-center justify-between text-[10px] font-mono">
           <span className="text-neutral-400">Tracking Sensitivity:</span>
-          <span className="text-cyan-400 font-bold">{sensitivity.toFixed(1)}x</span>
+          <span className="text-orange-400 font-bold">{sensitivity.toFixed(1)}x</span>
         </div>
         <input
           type="range"
@@ -162,7 +162,7 @@ export default function GestureControlPanel({ isOpen, onClose }) {
           step="0.1"
           value={sensitivity}
           onChange={(e) => setSensitivity(parseFloat(e.target.value))}
-          className="w-full accent-cyan-400 cursor-pointer h-1.5"
+          className="w-full accent-orange-500 cursor-pointer h-1.5"
         />
       </div>
 
@@ -173,7 +173,7 @@ export default function GestureControlPanel({ isOpen, onClose }) {
           type="button"
           className="p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-300 hover:text-white flex flex-col items-center gap-1 transition cursor-pointer"
         >
-          {previewVisible ? <Eye className="w-3.5 h-3.5 text-cyan-400" /> : <EyeOff className="w-3.5 h-3.5" />}
+          {previewVisible ? <Eye className="w-3.5 h-3.5 text-orange-400" /> : <EyeOff className="w-3.5 h-3.5" />}
           <span>{previewVisible ? 'Preview' : 'Hidden'}</span>
         </button>
 
@@ -182,7 +182,7 @@ export default function GestureControlPanel({ isOpen, onClose }) {
           type="button"
           className="p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-300 hover:text-white flex flex-col items-center gap-1 transition cursor-pointer"
         >
-          <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+          <Sliders className="w-3.5 h-3.5 text-orange-400" />
           <span>Calibrate</span>
         </button>
 
@@ -191,7 +191,7 @@ export default function GestureControlPanel({ isOpen, onClose }) {
           type="button"
           className="p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-300 hover:text-white flex flex-col items-center gap-1 transition cursor-pointer"
         >
-          <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
+          <HelpCircle className="w-3.5 h-3.5 text-orange-400" />
           <span>Tutorial</span>
         </button>
       </div>

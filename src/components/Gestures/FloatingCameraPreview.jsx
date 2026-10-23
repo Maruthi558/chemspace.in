@@ -75,7 +75,7 @@ export default function FloatingCameraPreview() {
     return (
       <div
         style={{ left: `${position.x}px`, top: `${position.y}px` }}
-        className="fixed z-[99990] flex items-center gap-2 p-2 rounded-2xl bg-[#08080a]/90 border border-cyan-500/30 text-white shadow-2xl backdrop-blur-xl cursor-move select-none animate-in fade-in"
+        className="fixed z-[99990] flex items-center gap-2 p-2 rounded-2xl bg-[#08080a]/90 border border-orange-500/30 text-white shadow-2xl shadow-orange-950/40 backdrop-blur-xl cursor-move select-none animate-in fade-in"
         onMouseDown={handleMouseDown}
       >
         <span
@@ -83,8 +83,8 @@ export default function FloatingCameraPreview() {
             handDetected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
           }`}
         />
-        <Camera className="w-3.5 h-3.5 text-cyan-400" />
-        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-300">
+        <Camera className="w-3.5 h-3.5 text-orange-400" />
+        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-300">
           {currentMode}
         </span>
         <button
@@ -101,7 +101,7 @@ export default function FloatingCameraPreview() {
   return (
     <div
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
-      className="fixed z-[99990] w-64 rounded-2xl overflow-hidden bg-[#0a0a0e]/95 border border-cyan-500/30 shadow-2xl shadow-cyan-950/40 backdrop-blur-xl select-none font-sans text-white animate-in zoom-in-95 duration-150"
+      className="fixed z-[99990] w-64 rounded-2xl overflow-hidden bg-[#0a0a0e]/95 border border-orange-500/30 shadow-2xl shadow-orange-950/40 backdrop-blur-xl select-none font-sans text-white animate-in zoom-in-95 duration-150"
     >
       {/* Header Bar - Draggable */}
       <div
@@ -159,7 +159,7 @@ export default function FloatingCameraPreview() {
         {/* Live HUD Telemetry Overlay */}
         <div className="absolute top-2 left-2 z-20 flex flex-col gap-1">
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/70 border border-white/10 text-[9px] font-mono backdrop-blur-sm">
-            <Activity className="w-2.5 h-2.5 text-cyan-400" />
+            <Activity className="w-2.5 h-2.5 text-orange-400" />
             <span className="text-neutral-300">
               {handDetected ? (isPaused ? 'PAUSED' : currentMode) : 'SEARCHING'}
             </span>

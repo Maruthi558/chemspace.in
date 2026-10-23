@@ -64,7 +64,7 @@ const SCIENTIFIC_MODULES = [
     icon: Bot,
     tag: 'Autonomous Agent',
     identityBadge: 'LiteFold + 3D Studio',
-    accentClass: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
+    accentClass: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
     watermark: 'DAG · 3D Pose',
     metrics: ['Agentic DAG Workflow', 'Nomosis 3D Viewer', '10 Lab Tools']
   },
@@ -238,7 +238,7 @@ export default function Landing() {
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
                   onClick={() => navigate('/ai-workspace')}
-                  className="group py-2.5 px-4 text-xs uppercase tracking-wider font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/20 active:scale-[0.98] rounded-xl border border-cyan-500/50 bg-gradient-to-r from-cyan-600 via-sky-600 to-teal-600 text-white hover:from-cyan-500 hover:to-teal-500 transition"
+                  className="btn-primary group py-2.5 px-4 text-xs uppercase tracking-wider font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-orange-500/20 active:scale-[0.98] rounded-xl border border-orange-500/50 bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 text-white hover:from-orange-500 hover:to-amber-400 transition"
                 >
                   <Bot className="w-3.5 h-3.5" />
                   <span>AI Workspace</span>
@@ -277,12 +277,12 @@ export default function Landing() {
 
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-manual'))}
-                  className="btn-secondary group py-2.5 px-4 text-xs uppercase tracking-wider font-bold flex items-center gap-2 cursor-pointer active:scale-[0.98] border-cyan-500/40 text-cyan-400 hover:text-cyan-300 hover:border-cyan-500/70"
+                  className="btn-secondary group py-2.5 px-4 text-xs uppercase tracking-wider font-bold flex items-center gap-2 cursor-pointer active:scale-[0.98] border-orange-500/40 text-orange-400 hover:text-orange-300 hover:border-orange-500/70"
                   title="Open Platform User Manual and Button Guide"
                 >
-                  <BookOpen className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                  <BookOpen className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
                   <span>Platform Manual &amp; Guide</span>
-                  <ChevronRight className="w-3 h-3 text-cyan-400/70 arrow-micro" />
+                  <ChevronRight className="w-3 h-3 text-orange-400/70 arrow-micro" />
                 </button>
               </div>
             </div>
@@ -306,7 +306,7 @@ export default function Landing() {
           {/* Quick Access Tool Strip with Tactile Feature Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             {[
-              { label: 'AI Workspace', path: '/ai-workspace', icon: Bot, desc: 'Prompt-to-Molecule & Multi-Tool Agent', badge: 'AGENT', highlightCyan: true },
+              { label: 'AI Workspace', path: '/ai-workspace', icon: Bot, desc: 'Prompt-to-Molecule & Multi-Tool Agent', badge: 'AGENT', highlight: true },
               { label: 'ChemSpace AI', action: 'copilot', icon: Sparkles, desc: 'Chemical Intelligence & Voice', badge: 'AI', highlight: true },
               { label: 'ChemDraw CAD', path: '/chemdraw', icon: PenTool, desc: '2D/3D Molecular Sketch', badge: 'CAD' },
               { label: 'RDKit Lab', path: '/rdkit-lab', icon: Cpu, desc: 'Physicochemical Descriptors', badge: 'Ro5' },
@@ -329,27 +329,21 @@ export default function Landing() {
                     }
                   }}
                   className={`card-feature-interactive p-3.5 flex flex-col justify-between space-y-2 cursor-pointer group ${
-                    tool.highlightCyan
-                      ? 'border-cyan-500/40 bg-cyan-500/5 hover:border-cyan-500/70 shadow-sm'
-                      : tool.highlight
+                    tool.highlight
                       ? 'border-orange-500/40 bg-orange-500/5 hover:border-orange-500/70 shadow-sm'
                       : ''
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition ${
-                      tool.highlightCyan
-                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                        : tool.highlight
+                      tool.highlight
                         ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                         : 'bg-[var(--home-surface-subtle)] border border-[var(--home-border)] text-[var(--home-text-primary)] group-hover:border-[var(--home-border-strong)]'
                     }`}>
-                      <Icon className={`w-4 h-4 ${tool.highlightCyan || tool.highlight ? 'animate-pulse' : ''}`} />
+                      <Icon className={`w-4 h-4 ${tool.highlight ? 'animate-pulse' : ''}`} />
                     </div>
                     <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-                      tool.highlightCyan
-                        ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30 font-bold'
-                        : tool.highlight
+                      tool.highlight
                         ? 'bg-orange-500/20 text-orange-400 border-orange-500/30 font-bold'
                         : 'bg-[var(--home-surface-subtle)] text-[var(--home-text-muted)] border border-[var(--home-border)]'
                     }`}>
@@ -358,9 +352,7 @@ export default function Landing() {
                   </div>
                   <div>
                     <span className={`text-xs font-bold block transition ${
-                      tool.highlightCyan
-                        ? 'text-cyan-400 group-hover:text-cyan-300'
-                        : tool.highlight
+                      tool.highlight
                         ? 'text-orange-400 group-hover:text-orange-300'
                         : 'text-[var(--home-text-primary)] group-hover:text-emerald-500'
                     }`}>
@@ -379,15 +371,15 @@ export default function Landing() {
         {/* ───────────────────────────────────────────────────────────────────────
             PLATFORM USER MANUAL & OPERATIONAL GUIDE BANNER
            ─────────────────────────────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-slate-900/60 to-emerald-950/40 p-5 sm:p-7 backdrop-blur-xl shadow-xl">
+        <section className="relative overflow-hidden rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-950/25 via-slate-900/60 to-amber-950/25 p-5 sm:p-7 backdrop-blur-xl shadow-xl">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-400 flex items-center justify-center shrink-0 shadow-lg shadow-cyan-500/20">
+              <div className="w-12 h-12 rounded-xl bg-orange-500/15 border border-orange-400/30 text-orange-400 flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20">
                 <BookOpen className="w-6 h-6 animate-pulse" />
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-cyan-400/20 text-cyan-300 font-bold border border-cyan-400/30">
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 font-bold border border-orange-500/30">
                     User Manual • Step-by-Step
                   </span>
                   <span className="text-[10px] font-mono text-[var(--home-text-muted)]">
@@ -406,7 +398,7 @@ export default function Landing() {
             <div className="flex flex-wrap items-center gap-2.5 shrink-0 w-full md:w-auto">
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-manual'))}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/30 active:scale-95 transition"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-orange-500/25 active:scale-95 transition"
               >
                 <BookOpen className="w-4 h-4" />
                 <span>Open User Manual</span>
