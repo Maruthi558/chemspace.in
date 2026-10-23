@@ -6,13 +6,12 @@
 const DEFAULT_AI_KEY = '';
 
 export const AI_MODELS = [
-  'gemini-flash-latest',
-  'gemini-3.1-flash-lite',
-  'gemini-3.8-flash',
-  'gemini-3.7-flash',
-  'gemini-3.6-flash',
-  'gemini-3.5-flash'
+  'gemini-1.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-pro'
 ];
+
+let isGeminiQuotaOrKeyInvalid = false;
 
 export const CHEMSPACE_SYSTEM_INSTRUCTION = `You are ChemSpace AI (DeepChem LLM), the proprietary, advanced scientific intelligence and molecular computation engine built for the ChemSpace laboratory platform.
 Your capabilities include:
@@ -236,20 +235,31 @@ export async function callGeminiChat(query, { history = [], systemPrompt = CHEMS
     }
   };
 
+  if (isGeminiQuotaOrKeyInvalid) {
+    throw new Error('Gemini API key is invalid or quota exceeded; falling back to instant high-performance scientific engine.');
+  }
+
   let lastError = null;
 
   for (const model of AI_MODELS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal
+        signal: signal || controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         lastError = new Error(`Engine status ${response.status}`);
+        if (response.status === 400 || response.status === 403 || response.status === 404) {
+          isGeminiQuotaOrKeyInvalid = true;
+          break; // Stop immediately, do not cascade across other models
+        }
         continue;
       }
 
@@ -261,12 +271,16 @@ export async function callGeminiChat(query, { history = [], systemPrompt = CHEMS
           responseText: answer,
           response: answer,
           provider: 'ChemSpace Intelligence (DeepChem LLM)',
-          model: 'ChemSpace DeepChem-3.8',
+          model: 'ChemSpace DeepChem',
           timestamp: new Date().toISOString()
         };
       }
     } catch (err) {
-      if (err.name === 'AbortError') throw err;
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        lastError = new Error('Request timed out; switching to instant offline chemistry engine.');
+        break;
+      }
       lastError = err;
     }
   }

@@ -11,6 +11,8 @@ export const OPENAI_MODELS = [
   'chatgpt-4o-latest'
 ];
 
+let isOpenAiQuotaExhausted = false;
+
 export const CHEMSPACE_OPENAI_SYSTEM_INSTRUCTION = `You are ChemSpace AI, the premier scientific intelligence and molecular computation engine built for the ChemSpace laboratory platform.
 Your capabilities include:
 1. Explaining organic, inorganic, physical, and biochemistry concepts rigorously, concisely, and accurately.
@@ -93,6 +95,10 @@ export async function* streamOpenAIChat(query, { history = [], systemPrompt = CH
     content: query
   });
 
+  if (isOpenAiQuotaExhausted) {
+    throw new Error('OpenAI quota exhausted; falling back to instant high-performance scientific engine.');
+  }
+
   const modelsToTry = [model, ...OPENAI_MODELS.filter(m => m !== model)];
   let lastError = null;
 
@@ -135,6 +141,10 @@ export async function* streamOpenAIChat(query, { history = [], systemPrompt = CH
       if (err.name === 'AbortError') throw err;
       console.warn(`[OpenAIService] Streaming failed with ${candidateModel}:`, err.message);
       lastError = err;
+      if (err.status === 429 || err.message?.includes('credits') || err.message?.includes('quota') || err.status === 401) {
+        isOpenAiQuotaExhausted = true;
+        break; // Stop immediately, do not cascade across other models
+      }
     }
   }
 
@@ -237,6 +247,10 @@ export async function callOpenAIChat(query, { history = [], systemPrompt = CHEMS
     content: query
   });
 
+  if (isOpenAiQuotaExhausted) {
+    throw new Error('OpenAI quota exhausted; falling back to instant high-performance scientific engine.');
+  }
+
   const modelsToTry = [model, ...OPENAI_MODELS.filter(m => m !== model)];
   let lastError = null;
 
@@ -265,6 +279,10 @@ export async function callOpenAIChat(query, { history = [], systemPrompt = CHEMS
       if (err.name === 'AbortError') throw err;
       console.warn(`[OpenAIService] Request failed with ${candidateModel}:`, err.message);
       lastError = err;
+      if (err.status === 429 || err.message?.includes('credits') || err.message?.includes('quota') || err.status === 401) {
+        isOpenAiQuotaExhausted = true;
+        break;
+      }
     }
   }
 
