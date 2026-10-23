@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { GlowCard, GlowCardGrid } from '../ui/GlowCardGrid';
-import { Sparkles, Heart, ThumbsUp, CheckCircle, MessageSquarePlus } from 'lucide-react';
+import { Sparkles, Heart, ThumbsUp, CheckCircle, MessageSquarePlus, Mail } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { submitScientistFeedback, RECIPIENT_EMAIL } from '../../services/feedbackService';
 
 const INITIAL_REVIEWS = [
   {
@@ -64,7 +65,7 @@ export default function ScientistReviewsGlowSection({ showSubmit = true }) {
 
   const EMOJI_OPTIONS = ['🧪', '🔬', '⚡', '⚛️', '🧬', '💎', '🚀', '🎯', '👨‍🔬', '👩‍🔬'];
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!userFeedback.trim()) return;
 
@@ -78,9 +79,26 @@ export default function ScientistReviewsGlowSection({ showSubmit = true }) {
     };
 
     setReviews([newReview, ...reviews]);
+
+    // Dispatch to ChemSpace Research Gateway
+    try {
+      await submitScientistFeedback({
+        rating: userRating,
+        problemTitle: `Glowing Scientist Review (${selectedEmoji})`,
+        description: userFeedback.trim(),
+        customerEmail: user?.email || '',
+        customerName: newReview.name,
+        scientistType: selectedEmoji === '👩‍🔬' ? 'female' : 'male',
+        pathway: 'praise_review',
+        priority: 'normal'
+      });
+    } catch (err) {
+      console.warn('Feedback dispatch notice:', err);
+    }
+
     setUserFeedback('');
     setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
+    setTimeout(() => setSubmitted(false), 5000);
   };
 
   return (
@@ -131,7 +149,7 @@ export default function ScientistReviewsGlowSection({ showSubmit = true }) {
             {submitted && (
               <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-500 font-bold">
                 <CheckCircle className="w-3.5 h-3.5" />
-                <span>Thank you! Your glowing review has been posted.</span>
+                <span>Thank you! Review posted and dispatched to {RECIPIENT_EMAIL}.</span>
               </div>
             )}
           </div>

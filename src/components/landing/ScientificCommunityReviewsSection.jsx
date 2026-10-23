@@ -78,8 +78,8 @@ export const REVIEWS_ROW_2 = [
     authorAvatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=160&q=80',
     authorName: 'Dr. Julian Thorne',
     authorTagline: 'Synthesis Lead · Oxford Chemistry',
-    quote: 'IBM RXN retrosynthesis integration and reaction yield prediction have shortened our precursor pathway discovery time from days down to seconds.',
-    domain: 'IBM RXN Retrosynthesis',
+    quote: 'ARXN retrosynthesis integration and reaction yield prediction have shortened our precursor pathway discovery time from days down to seconds.',
+    domain: 'ARXN Reaction Synthesis',
     rating: 5,
     verified: true
   },

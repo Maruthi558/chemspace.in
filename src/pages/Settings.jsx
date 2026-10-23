@@ -33,6 +33,7 @@ import { getUserPreferences, saveUserPreferences } from '../services/userPrefere
 import { fetchUserDownloads, triggerFileDownload, deleteDownloadRecord, clearDownloadsHistory, formatBytes } from '../services/downloadsManager';
 import { fetchUserWorkspaceHistory, deleteUserWorkspaceItem, clearUserWorkspaceHistory, fetchUserAuditLogs } from '../services/workspaceApi';
 import { getSavedScientistProfile, saveScientistProfile } from '../services/firebase';
+import { MaleScientistLogo, FemaleScientistLogo } from '../components/common/ScientistLogo';
 
 const CATEGORIES = [
   { id: 'profile', label: 'PROFILE', icon: User },
@@ -138,6 +139,7 @@ export default function Settings() {
   const handleSaveProfile = (e) => {
     e.preventDefault();
     saveScientistProfile(profile);
+    window.dispatchEvent(new Event('chemspace-auth-changed'));
     setProfileSuccess(true);
     setTimeout(() => setProfileSuccess(false), 2000);
   };
@@ -272,6 +274,54 @@ export default function Settings() {
                       isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-neutral-50 border-neutral-300 text-black'
                     }`}
                   />
+                </div>
+              </div>
+
+              {/* Scientist Persona & Official Logo Badge */}
+              <div className="space-y-2 pt-2">
+                <label className="block text-xs font-mono font-bold">
+                  Scientist Persona &amp; Official Logo Emblem
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setProfile({ ...profile, scientistType: 'male' })}
+                    className={`p-3.5 rounded-2xl border text-left flex items-center gap-3 transition cursor-pointer ${
+                      (profile.scientistType || 'male') === 'male'
+                        ? 'bg-cyan-500/15 border-cyan-400 text-cyan-200 ring-2 ring-cyan-400/30 shadow-md'
+                        : 'bg-neutral-900/40 border-neutral-800 text-neutral-400 hover:bg-neutral-850'
+                    }`}
+                  >
+                    <MaleScientistLogo size={42} />
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold font-mono text-[var(--text-primary)]">
+                        Male Scientist
+                      </div>
+                      <div className="text-[10px] text-neutral-400">
+                        Cobalt &amp; Cyan Emblem
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setProfile({ ...profile, scientistType: 'female' })}
+                    className={`p-3.5 rounded-2xl border text-left flex items-center gap-3 transition cursor-pointer ${
+                      profile.scientistType === 'female'
+                        ? 'bg-emerald-500/15 border-emerald-400 text-emerald-200 ring-2 ring-emerald-400/30 shadow-md'
+                        : 'bg-neutral-900/40 border-neutral-800 text-neutral-400 hover:bg-neutral-850'
+                    }`}
+                  >
+                    <FemaleScientistLogo size={42} />
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold font-mono text-[var(--text-primary)]">
+                        Female Scientist
+                      </div>
+                      <div className="text-[10px] text-neutral-400">
+                        Curie &amp; Franklin Devotion
+                      </div>
+                    </div>
+                  </button>
                 </div>
               </div>
 

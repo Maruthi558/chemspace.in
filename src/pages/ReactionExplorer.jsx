@@ -165,10 +165,10 @@ export default function ReactionExplorer() {
               else navigate('/ibm-rxn');
             }}
             className="px-3 py-2 rounded-xl border border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer"
-            title="Export to IBM RXN Retrosynthesis Planner"
+            title="Export to ARXN Retrosynthesis Planner"
           >
             <Workflow className="w-3.5 h-3.5" />
-            <span>Plan in IBM RXN</span>
+            <span>Plan in ARXN</span>
           </button>
 
           <button

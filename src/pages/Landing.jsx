@@ -42,6 +42,7 @@ import ScientificResearchArticlesSection from '../components/landing/ScientificR
 import ChemicalIntelligenceMilestones from '../components/landing/ChemicalIntelligenceMilestones';
 import FluidGradientTextShowcase from '../components/landing/FluidGradientTextShowcase';
 import ChemSpaceVideoTourRoadmap from '../components/landing/ChemSpaceVideoTourRoadmap';
+import LiteMolShowcaseSection from '../components/landing/LiteMolShowcaseSection';
 
 const assetUrl = (path) => {
   const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
@@ -56,10 +57,10 @@ const assetUrl = (path) => {
 const SCIENTIFIC_MODULES = [
   {
     id: 'ai-automation',
-    title: 'AI Automation Central',
-    subtitle: 'LiteFold Research Engine & Nomosis 3D Pose Studio',
-    description: 'Autonomous multi-step scientific research planning, computational tool execution, 3D molecular/protein interaction visualization, binding affinity estimation, and evidence-backed reporting.',
-    path: '/ai-automation',
+    title: 'AI Agent Workspace',
+    subtitle: 'Autonomous Prompt-to-Molecule Research & 3D Pose Studio',
+    description: 'Type any chemistry research goal: the autonomous agent plans, runs multi-tool pipelines step-by-step, generates 3D molecules, and outputs full scientific artifacts.',
+    path: '/ai-workspace',
     icon: Bot,
     tag: 'Autonomous Agent',
     identityBadge: 'LiteFold + 3D Studio',
@@ -121,7 +122,7 @@ const SCIENTIFIC_MODULES = [
   },
   {
     id: 'rxn',
-    title: 'IBM RXN Retrosynthesis',
+    title: 'ARXN Retrosynthesis & Synthesis',
     subtitle: 'Algorithmic Reaction Pathways & Precursors',
     description: 'Automated retrosynthetic forward and reverse search engine: break down complex organic targets into commercially available building blocks with step-by-step mechanisms.',
     path: '/ibm-rxn',
@@ -236,11 +237,11 @@ export default function Landing() {
               {/* Tactile Desktop Software Action Controls */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
-                  onClick={() => navigate('/ai-automation')}
+                  onClick={() => navigate('/ai-workspace')}
                   className="group py-2.5 px-4 text-xs uppercase tracking-wider font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/20 active:scale-[0.98] rounded-xl border border-cyan-500/50 bg-gradient-to-r from-cyan-600 via-sky-600 to-teal-600 text-white hover:from-cyan-500 hover:to-teal-500 transition"
                 >
                   <Bot className="w-3.5 h-3.5" />
-                  <span>AI Automation Central</span>
+                  <span>AI Workspace</span>
                   <span className="px-1.5 py-0.2 rounded text-[9px] bg-white/20 text-white font-mono font-semibold tracking-wider">
                     AGENTIC
                   </span>
@@ -273,6 +274,16 @@ export default function Landing() {
                   <span>Lab Records</span>
                   <ChevronRight className="w-3 h-3 text-[var(--home-text-muted)] arrow-micro" />
                 </button>
+
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-manual'))}
+                  className="btn-secondary group py-2.5 px-4 text-xs uppercase tracking-wider font-bold flex items-center gap-2 cursor-pointer active:scale-[0.98] border-cyan-500/40 text-cyan-400 hover:text-cyan-300 hover:border-cyan-500/70"
+                  title="Open Platform User Manual and Button Guide"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                  <span>Platform Manual &amp; Guide</span>
+                  <ChevronRight className="w-3 h-3 text-cyan-400/70 arrow-micro" />
+                </button>
               </div>
             </div>
 
@@ -295,13 +306,13 @@ export default function Landing() {
           {/* Quick Access Tool Strip with Tactile Feature Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             {[
-              { label: 'AI Automation', path: '/ai-automation', icon: Bot, desc: 'LiteFold Engine & 3D Pose Studio', badge: 'AGENT', highlightCyan: true },
+              { label: 'AI Workspace', path: '/ai-workspace', icon: Bot, desc: 'Prompt-to-Molecule & Multi-Tool Agent', badge: 'AGENT', highlightCyan: true },
               { label: 'ChemSpace AI', action: 'copilot', icon: Sparkles, desc: 'Chemical Intelligence & Voice', badge: 'AI', highlight: true },
               { label: 'ChemDraw CAD', path: '/chemdraw', icon: PenTool, desc: '2D/3D Molecular Sketch', badge: 'CAD' },
               { label: 'RDKit Lab', path: '/rdkit-lab', icon: Cpu, desc: 'Physicochemical Descriptors', badge: 'Ro5' },
               { label: 'Spectroscopy', path: '/spectroscopy', icon: Radio, desc: 'FTIR, UV-Vis & NMR', badge: 'FTIR' },
               { label: 'Quantum Lab', path: '/quantum-library', icon: Zap, desc: 'DFT & Molecular Orbitals', badge: 'DFT' },
-              { label: 'IBM Synthesis', path: '/ibm-rxn', icon: Activity, desc: 'Multi-step Reaction Trees', badge: 'RXN' },
+              { label: 'ARXN Synthesis', path: '/ibm-rxn', icon: Activity, desc: 'Multi-step Reaction Trees & Rare Syntheses', badge: 'ARXN' },
               { label: 'Periodic Table', path: '/periodic-table', icon: Grid, desc: '118 Elements & Isotopes', badge: '118' }
             ].map((tool) => {
               const Icon = tool.icon;
@@ -311,6 +322,8 @@ export default function Landing() {
                   onClick={() => {
                     if (tool.action === 'copilot') {
                       window.dispatchEvent(new CustomEvent('chemspace-open-copilot'));
+                    } else if (tool.action === 'manual') {
+                      window.dispatchEvent(new CustomEvent('chemspace-open-manual'));
                     } else if (tool.path) {
                       navigate(tool.path);
                     }
@@ -360,6 +373,46 @@ export default function Landing() {
                 </div>
               );
             })}
+          </div>
+        </section>
+
+        {/* ───────────────────────────────────────────────────────────────────────
+            PLATFORM USER MANUAL & OPERATIONAL GUIDE BANNER
+           ─────────────────────────────────────────────────────────────────────── */}
+        <section className="relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-slate-900/60 to-emerald-950/40 p-5 sm:p-7 backdrop-blur-xl shadow-xl">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-400 flex items-center justify-center shrink-0 shadow-lg shadow-cyan-500/20">
+                <BookOpen className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-cyan-400/20 text-cyan-300 font-bold border border-cyan-400/30">
+                    User Manual • Step-by-Step
+                  </span>
+                  <span className="text-[10px] font-mono text-[var(--home-text-muted)]">
+                    10 Detailed Chapters • Every Button Explained
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-[var(--home-text-primary)]">
+                  Need Help Navigating ChemSpace? Read the Complete User Manual
+                </h3>
+                <p className="text-xs sm:text-sm text-[var(--home-text-secondary)] mt-1 max-w-2xl leading-relaxed">
+                  Clear, simple language explaining every lab tool, how to type prompts in the AI Workspace, draw molecules in CAD, plan reactions in ARXN, and what each button click does.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0 w-full md:w-auto">
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-manual'))}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/30 active:scale-95 transition"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Open User Manual</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </section>
 
@@ -430,6 +483,11 @@ export default function Landing() {
             CHEMSPACE REAL-TIME MOLECULAR AI RESEARCH (Unified CAD Blueprint)
            ─────────────────────────────────────────────────────────────────────── */}
         <ChemSpaceAIResearchSection />
+
+        {/* ───────────────────────────────────────────────────────────────────────
+            LITEMOL-1 MULTI-MOLECULE FOUNDATION DIFFUSION SHOWCASE & 8-COMPLEX 3D
+           ─────────────────────────────────────────────────────────────────────── */}
+        <LiteMolShowcaseSection />
 
         {/* ───────────────────────────────────────────────────────────────────────
             RESEARCH BENCHMARK & CHEMICAL INTELLIGENCE VISUALIZER
@@ -611,7 +669,7 @@ export default function Landing() {
                 onClick={() => navigate('/ibm-rxn')}
                 className="btn-secondary w-full py-2 text-xs font-bold justify-between mt-3 cursor-pointer active:scale-[0.98]"
               >
-                <span>Launch IBM Synthesis Studio</span>
+                <span>Launch ARXN Synthesis Studio</span>
                 <ArrowRight className="w-3.5 h-3.5 arrow-micro" />
               </button>
             </div>
@@ -871,7 +929,7 @@ export default function Landing() {
               <button onClick={() => navigate('/chemdraw')} className="hover:text-[var(--home-text-primary)] transition">ChemDraw</button>
               <button onClick={() => navigate('/rdkit-lab')} className="hover:text-[var(--home-text-primary)] transition">RDKit</button>
               <button onClick={() => navigate('/spectroscopy')} className="hover:text-[var(--home-text-primary)] transition">Spectra</button>
-              <button onClick={() => navigate('/ibm-rxn')} className="hover:text-[var(--home-text-primary)] transition">IBM RXN</button>
+              <button onClick={() => navigate('/ibm-rxn')} className="hover:text-[var(--home-text-primary)] transition">ARXN</button>
               <button onClick={() => navigate('/periodic-table')} className="hover:text-[var(--home-text-primary)] transition">Periodic Table</button>
               <button onClick={() => navigate('/contact')} className="hover:text-[var(--home-text-primary)] transition">Support</button>
             </div>

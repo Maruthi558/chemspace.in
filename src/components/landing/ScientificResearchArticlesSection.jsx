@@ -40,7 +40,7 @@ export const SCIENTIFIC_ARTICLES = [
   },
   {
     id: '4',
-    title: 'Retrosynthetic Disconnection Strategies for Complex Polycyclic Alkaloids via IBM RXN',
+    title: 'Retrosynthetic Disconnection Strategies for Complex Polycyclic Alkaloids via ARXN',
     coverUrl: '/assets/synthesis_lab.jpg',
     createdAt: '2026-06-30',
     category: 'Organic Synthesis',

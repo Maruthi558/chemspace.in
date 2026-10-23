@@ -13,7 +13,7 @@ import { useTheme } from '../../context/ThemeContext';
  * - Spectroscopy: Frequency baseline and vibrational wavenumber harmonics
  * - Periodic Table: Elemental block matrix and electron shell guidelines
  * - Quantum DFT: Orbital wavefunction probability lobes & HOMO-LUMO energy lines
- * - IBM RXN: Retrosynthetic disconnection arrows & reaction energy profiles
+ * - ARXN: Retrosynthetic disconnection arrows & reaction energy profiles
  * - General Workspaces: Minimalist Cartesian coordinate ticks and bench borders
  */
 export default function ScientificWorkspaceBackground({ forcedMode = null }) {
@@ -222,7 +222,7 @@ export default function ScientificWorkspaceBackground({ forcedMode = null }) {
             </g>
           )}
 
-          {/* 7. IBM RXN: Retrosynthetic Transform Double Arrows */}
+          {/* 7. ARXN: Retrosynthetic Transform Double Arrows */}
           {workspace === 'rxn' && (
             <g transform="translate(80, 680)">
               <path d="M 10 20 L 70 20 M 10 26 L 70 26" stroke={accentStroke} strokeWidth="1.2" />

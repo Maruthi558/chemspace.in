@@ -807,6 +807,331 @@ export const MECHANISM_TEMPLATES = [
         ]
       }
     ]
+  },
+
+  // ── 6. CuAAC Click Chemistry (Nobel 2022) ──
+  {
+    id: 'click_cuaac',
+    name: 'CuAAC Click Chemistry Azide-Alkyne Cycloaddition (Nobel 2022)',
+    class: 'Bioorthogonal Cycloaddition',
+    subclass: 'Copper(I) Catalytic Cycle',
+    era: 'Modern',
+    complexity: 'Cutting-Edge',
+    description: 'Copper(I)-catalyzed 1,3-dipolar cycloaddition of terminal alkynes and organic azides yielding exclusively 1,4-disubstituted 1,2,3-triazoles with 100% atom economy.',
+    drivingForce: 'Tremendous thermodynamic stabilization of the aromatic 1,2,3-triazole core and release of ring strain.',
+    reactantsSmiles: ['c1ccccc1CN=[N+]=[N-]', 'C#Cc1ccccc1'],
+    productSmiles: 'c1ccccc1Cn1cc(-c2ccccc2)nn1',
+    steps: [
+      {
+        stepNumber: 1,
+        title: 'Step 1: Copper Acetylide Complexation & Dinuclear Cu(I) Assembly',
+        isTransitionState: false,
+        reagent: 'CuSO4·5H2O + Sodium Ascorbate / Water:tBuOH',
+        condition: '25 °C (Ambient)',
+        description: 'Active Cu(I) coordinates to the terminal alkyne π-cloud and base deprotonates to form a σ,π-dinuclear copper acetylide intermediate.',
+        nucleophile: 'Terminal Alkyne Carbon (C≡C)',
+        electrophile: 'Cu(I) Catalyst Center',
+        drivingForce: 'Facile coordination of soft Cu(I) to electron-rich alkyne π-orbitals.',
+        atoms: [
+          { id: 1, element: 'C', x: 120, y: 180, charge: 0, label: 'Ar-C' },
+          { id: 2, element: 'C', x: 200, y: 180, charge: 0, label: 'C(α)' },
+          { id: 3, element: 'C', x: 280, y: 180, charge: 0, label: 'C(β)' },
+          { id: 4, element: 'Cu', x: 280, y: 100, charge: 1, label: 'Cu(I)' },
+          { id: 5, element: 'N', x: 400, y: 130, charge: 0, label: 'N(α)-Bn' },
+          { id: 6, element: 'N', x: 460, y: 170, charge: 1, label: 'N(β)⁺' },
+          { id: 7, element: 'N', x: 440, y: 230, charge: -1, label: 'N(γ)⁻' }
+        ],
+        bonds: [
+          { id: 101, from: 1, to: 2, type: 'single', order: 1 },
+          { id: 102, from: 2, to: 3, type: 'triple', order: 3 },
+          { id: 103, from: 3, to: 4, type: 'single', order: 1 },
+          { id: 104, from: 5, to: 6, type: 'double', order: 2 },
+          { id: 105, from: 6, to: 7, type: 'double', order: 2 }
+        ],
+        arrows: [
+          {
+            id: 'arr_click_1',
+            type: 'pair',
+            sourceType: 'atom',
+            sourceId: 7,
+            targetType: 'atom',
+            targetId: 2,
+            curveOffset: 35,
+            label: 'N(γ) Nucleophilic Attack',
+            description: 'Terminal azide nitrogen lone pair attacks the activated alkyne carbon.'
+          },
+          {
+            id: 'arr_click_2',
+            type: 'pair',
+            sourceType: 'bond',
+            sourceId: 102,
+            targetType: 'atom',
+            targetId: 5,
+            curveOffset: -30,
+            label: 'C=C Bond Formation',
+            description: 'Alkyne π-electron pair attacks the proximal azide nitrogen.'
+          }
+        ]
+      },
+      {
+        stepNumber: 2,
+        title: 'Step 2: 6-Membered Cupracycle Intermediate [‡]',
+        isTransitionState: true,
+        reagent: 'Dinuclear Cupracycle Transition State',
+        condition: '25 °C',
+        description: 'Concerted formation of a copper-containing 6-membered metallacycle (cupracycle intermediate) lowering the activation barrier from 26 kcal/mol down to 11 kcal/mol.',
+        nucleophile: 'Cu-C Metallacycle Intermediate',
+        electrophile: 'Azide-Copper Coordination',
+        drivingForce: 'Kinetic acceleration by copper(I) reducing the reaction activation barrier dramatically.',
+        atoms: [
+          { id: 1, element: 'C', x: 140, y: 180, charge: 0 },
+          { id: 2, element: 'C', x: 220, y: 150, charge: 0 },
+          { id: 3, element: 'C', x: 290, y: 150, charge: 0 },
+          { id: 4, element: 'Cu', x: 330, y: 80, charge: 1, label: 'Cu(I)' },
+          { id: 5, element: 'N', x: 330, y: 220, charge: 0, label: 'N1-Bn' },
+          { id: 6, element: 'N', x: 270, y: 260, charge: 0, label: 'N2' },
+          { id: 7, element: 'N', x: 200, y: 230, charge: 0, label: 'N3' }
+        ],
+        bonds: [
+          { id: 201, from: 1, to: 2, type: 'single', order: 1 },
+          { id: 202, from: 2, to: 3, type: 'double', order: 2 },
+          { id: 203, from: 3, to: 4, type: 'single', order: 1 },
+          { id: 204, from: 4, to: 5, type: 'single', order: 1 },
+          { id: 205, from: 5, to: 6, type: 'single', order: 1 },
+          { id: 206, from: 6, to: 7, type: 'double', order: 2 },
+          { id: 207, from: 7, to: 2, type: 'single', order: 1 }
+        ],
+        arrows: [
+          {
+            id: 'arr_click_3',
+            type: 'pair',
+            sourceType: 'bond',
+            sourceId: 203,
+            targetType: 'bond',
+            targetId: 204,
+            curveOffset: -25,
+            label: 'Cu Extrusion & Contraction',
+            description: 'Metallacycle collapses to expel Cu(I) and form 5-membered aromatic triazole ring.'
+          }
+        ]
+      },
+      {
+        stepNumber: 3,
+        title: 'Step 3: 1,4-Disubstituted 1,2,3-Triazole Product & Catalyst Turnover',
+        isTransitionState: false,
+        reagent: 'Proton Transfer / Turnover',
+        condition: 'Ambient',
+        description: 'Rapid protonolysis of the C-Cu bond releases the stable 1,4-triazole heterocycle and regenerates the active Cu(I) catalyst.',
+        nucleophile: 'Solvent Proton',
+        electrophile: 'Triazolyl-Cu center',
+        drivingForce: 'Aromatic stabilization of the 1,2,3-triazole ring (Hückel 6 π-electron rule).',
+        atoms: [
+          { id: 1, element: 'C', x: 130, y: 170, charge: 0, label: 'Phenyl' },
+          { id: 2, element: 'C', x: 220, y: 150, charge: 0, label: 'C4' },
+          { id: 3, element: 'C', x: 290, y: 190, charge: 0, label: 'C5-H' },
+          { id: 4, element: 'N', x: 260, y: 260, charge: 0, label: 'N1-Bn' },
+          { id: 5, element: 'N', x: 180, y: 260, charge: 0, label: 'N2' },
+          { id: 6, element: 'N', x: 150, y: 190, charge: 0, label: 'N3' },
+          { id: 7, element: 'Cu', x: 380, y: 120, charge: 1, label: 'Cu(I) active' }
+        ],
+        bonds: [
+          { id: 301, from: 1, to: 2, type: 'single', order: 1 },
+          { id: 302, from: 2, to: 3, type: 'double', order: 2 },
+          { id: 303, from: 3, to: 4, type: 'single', order: 1 },
+          { id: 304, from: 4, to: 5, type: 'single', order: 1 },
+          { id: 305, from: 5, to: 6, type: 'double', order: 2 },
+          { id: 306, from: 6, to: 2, type: 'single', order: 1 }
+        ],
+        arrows: []
+      }
+    ]
+  },
+
+  // ── 7. Buchwald-Hartwig Amination Catalytic Cycle ──
+  {
+    id: 'buchwald_hartwig',
+    name: 'Buchwald-Hartwig C-N Cross-Coupling Catalytic Cycle',
+    class: 'Palladium Cross-Coupling',
+    subclass: 'C-N Bond Formation',
+    era: 'Modern',
+    complexity: 'Advanced',
+    description: 'Palladium-catalyzed coupling of an aryl halide with an amine in the presence of base and biaryl phosphine ligand to yield arylamines.',
+    drivingForce: 'Conversion of reactive C-Br and N-H bonds into a robust, thermodynamically favored C(aryl)-N bond.',
+    reactantsSmiles: ['Cc1ccc(Br)cc1', 'C1COCCN1'],
+    productSmiles: 'Cc1ccc(N2CCOCC2)cc1',
+    steps: [
+      {
+        stepNumber: 1,
+        title: 'Step 1: Oxidative Addition [L-Pd(0) → L-Pd(II)(Ar)(Br)]',
+        isTransitionState: false,
+        reagent: 'Pd2(dba)3 / XantPhos / Toluene',
+        condition: '95 °C',
+        description: 'Monoligated LPd(0) inserts into the carbon-bromine σ-bond of the aryl halide, oxidizing the metal from Pd(0) to Pd(II).',
+        nucleophile: 'Electron-rich Pd(0) center',
+        electrophile: 'Aryl Halide C-Br bond',
+        drivingForce: 'Strong affinity of LPd(0) for aromatic carbon-halogen σ* antibonding orbitals.',
+        atoms: [
+          { id: 1, element: 'C', x: 130, y: 170, charge: 0, label: 'Ar' },
+          { id: 2, element: 'Pd', x: 250, y: 170, charge: 2, label: 'L-Pd(II)' },
+          { id: 3, element: 'Br', x: 370, y: 170, charge: -1, label: 'Br' }
+        ],
+        bonds: [
+          { id: 101, from: 1, to: 2, type: 'single', order: 1 },
+          { id: 202, from: 2, to: 3, type: 'single', order: 1 }
+        ],
+        arrows: [
+          {
+            id: 'arr_bh_1',
+            type: 'pair',
+            sourceType: 'atom',
+            sourceId: 2,
+            targetType: 'atom',
+            targetId: 1,
+            curveOffset: -30,
+            label: 'Oxidative Addition',
+            description: 'Pd(0) inserts into C-Br bond.'
+          }
+        ]
+      },
+      {
+        stepNumber: 2,
+        title: 'Step 2: Amine Coordination & Base-Mediated Deprotonation',
+        isTransitionState: false,
+        reagent: 'NaOtBu (Base) / Morpholine',
+        condition: '95 °C',
+        description: 'Amine coordinates to the Pd(II) complex, displacing halide. Sodium tert-butoxide deprotonates the ammonium ligand to generate the amido-palladium intermediate.',
+        nucleophile: 'Morpholine Nitrogen Lone Pair',
+        electrophile: 'Pd(II) Coordination Sphere',
+        drivingForce: 'Base-assisted elimination of stable NaBr salt and formation of four-coordinate amido-Pd complex.',
+        atoms: [
+          { id: 1, element: 'C', x: 140, y: 140, charge: 0, label: 'Ar' },
+          { id: 2, element: 'Pd', x: 250, y: 170, charge: 2, label: 'L-Pd(II)' },
+          { id: 3, element: 'N', x: 360, y: 170, charge: 0, label: 'Morpholine-N' }
+        ],
+        bonds: [
+          { id: 201, from: 1, to: 2, type: 'single', order: 1 },
+          { id: 202, from: 2, to: 3, type: 'single', order: 1 }
+        ],
+        arrows: [
+          {
+            id: 'arr_bh_2',
+            type: 'pair',
+            sourceType: 'atom',
+            sourceId: 3,
+            targetType: 'atom',
+            targetId: 1,
+            curveOffset: -35,
+            label: 'Reductive Elimination',
+            description: 'Ar-N coupling and LPd(0) release.'
+          }
+        ]
+      },
+      {
+        stepNumber: 3,
+        title: 'Step 3: Reductive Elimination & Catalyst Regeneration',
+        isTransitionState: false,
+        reagent: 'Catalyst Turnover',
+        condition: '95 °C',
+        description: 'Direct carbon-nitrogen bond formation expels the arylamine product and regenerates the active LPd(0) catalyst for the next turnover.',
+        nucleophile: 'Amido Nitrogen',
+        electrophile: 'Aryl Carbon',
+        drivingForce: 'Thermodynamically favored C-N bond formation and reduction of Pd(II) back to Pd(0).',
+        atoms: [
+          { id: 1, element: 'C', x: 160, y: 170, charge: 0, label: 'Ar' },
+          { id: 2, element: 'N', x: 260, y: 170, charge: 0, label: 'N-Morpholine' },
+          { id: 3, element: 'Pd', x: 380, y: 170, charge: 0, label: 'LPd(0) active' }
+        ],
+        bonds: [
+          { id: 301, from: 1, to: 2, type: 'single', order: 1 }
+        ],
+        arrows: []
+      }
+    ]
+  },
+
+  // ── 8. Wittig Olefination Mechanism ──
+  {
+    id: 'wittig_olefination',
+    name: 'Wittig Olefination via Oxaphosphetane Intermediate',
+    class: 'Ylide Addition & Cycloreversion',
+    subclass: 'Carbonyl to Alkene Transformation',
+    era: 'Classic',
+    complexity: 'Intermediate',
+    description: 'Reaction between an aldehyde or ketone and a phosphonium ylide forming a 4-membered oxaphosphetane that collapses to release an alkene and Ph3P=O.',
+    drivingForce: 'Extraordinary thermodynamic stability of the phosphorus-oxygen double bond (P=O bond energy ~ 535 kJ/mol).',
+    reactantsSmiles: ['O=Cc1ccccc1', 'C=[P](c1ccccc1)(c2ccccc2)c3ccccc3'],
+    productSmiles: 'C=Cc1ccccc1',
+    steps: [
+      {
+        stepNumber: 1,
+        title: 'Step 1: [2+2] Cycloaddition to 4-Membered Oxaphosphetane',
+        isTransitionState: false,
+        reagent: 'Ph3P=CH2 / Anhydrous THF',
+        condition: '0 °C',
+        description: 'The carbanionic center of the phosphorus ylide attacks the electrophilic carbonyl carbon while the oxygen attacks phosphorus, forming a cyclic 4-membered oxaphosphetane.',
+        nucleophile: 'Ylide Carbanion (:CH2⁻)',
+        electrophile: 'Carbonyl Carbon (C=O)',
+        drivingForce: 'Strong oxophilicity of phosphorus driving concerted [2+2] cycloaddition.',
+        atoms: [
+          { id: 1, element: 'C', x: 180, y: 130, charge: 0, label: 'Ar-C(H)' },
+          { id: 2, element: 'O', x: 280, y: 130, charge: 0, label: 'O' },
+          { id: 3, element: 'P', x: 280, y: 220, charge: 0, label: 'PPh3' },
+          { id: 4, element: 'C', x: 180, y: 220, charge: 0, label: 'CH2' }
+        ],
+        bonds: [
+          { id: 101, from: 1, to: 2, type: 'single', order: 1 },
+          { id: 102, from: 2, to: 3, type: 'single', order: 1 },
+          { id: 103, from: 3, to: 4, type: 'single', order: 1 },
+          { id: 104, from: 4, to: 1, type: 'single', order: 1 }
+        ],
+        arrows: [
+          {
+            id: 'arr_wittig_1',
+            type: 'pair',
+            sourceType: 'bond',
+            sourceId: 104,
+            targetType: 'bond',
+            targetId: 101,
+            curveOffset: -25,
+            label: 'C=C Formation',
+            description: 'C-C bond becomes alkene C=C double bond.'
+          },
+          {
+            id: 'arr_wittig_2',
+            type: 'pair',
+            sourceType: 'bond',
+            sourceId: 102,
+            targetType: 'bond',
+            targetId: 103,
+            curveOffset: 25,
+            label: 'P=O Formation',
+            description: 'P-O bond becomes P=O double bond.'
+          }
+        ]
+      },
+      {
+        stepNumber: 2,
+        title: 'Step 2: Oxaphosphetane Retro-[2+2] Cleavage to Alkene + Ph3P=O',
+        isTransitionState: false,
+        reagent: 'Thermal Cycloreversion',
+        condition: '25 °C',
+        description: 'Cycloreversion of the oxaphosphetane releases the target alkene (styrene) and highly stable triphenylphosphine oxide precipitate.',
+        nucleophile: 'None',
+        electrophile: 'None',
+        drivingForce: 'Formation of irreversible 535 kJ/mol P=O bond.',
+        atoms: [
+          { id: 1, element: 'C', x: 150, y: 170, charge: 0, label: 'Ar-C(H)' },
+          { id: 2, element: 'C', x: 230, y: 170, charge: 0, label: '=CH2 (Alkene)' },
+          { id: 3, element: 'O', x: 350, y: 170, charge: 0, label: 'O' },
+          { id: 4, element: 'P', x: 430, y: 170, charge: 0, label: '=PPh3' }
+        ],
+        bonds: [
+          { id: 201, from: 1, to: 2, type: 'double', order: 2 },
+          { id: 202, from: 3, to: 4, type: 'double', order: 2 }
+        ],
+        arrows: []
+      }
+    ]
   }
 ];
 

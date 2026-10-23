@@ -73,7 +73,7 @@ if (typeof window !== 'undefined') {
     if (supported) {
       analytics = getAnalytics(app);
     }
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 const googleProvider = new GoogleAuthProvider();
@@ -126,7 +126,7 @@ export function getSavedScientistProfile() {
   }
 
   return {
-    name: existingUser?.name || 'Dr. Maruthi Chemist',
+    name: existingUser?.name || 'Dr. MMR Chemist',
     title: existingUser?.role || 'Lead Research Chemist',
     email: existingUser?.email || 'scientist@chemspace.org',
     workplace: existingUser?.workplace || 'ChemSpace Advanced Institute of Chemical Sciences',
@@ -138,7 +138,8 @@ export function getSavedScientistProfile() {
     researchField: existingUser?.researchField || 'Organic Synthesis & Molecular Modeling',
     orcid: existingUser?.orcid || '0000-0002-1825-0097',
     status: existingUser?.status || 'Active Lab On-Duty',
-    avatar: existingUser?.avatar || ''
+    avatar: existingUser?.avatar || '',
+    scientistType: existingUser?.scientistType || 'male'
   };
 }
 
@@ -175,6 +176,7 @@ export function saveScientistProfile(profileData) {
       orcid: updatedProfile.orcid,
       status: updatedProfile.status,
       avatar: updatedProfile.avatar || currentUser.avatar || '',
+      scientistType: updatedProfile.scientistType || currentUser.scientistType || 'male',
       verified: true
     };
 

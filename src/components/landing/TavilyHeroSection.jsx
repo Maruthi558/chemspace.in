@@ -29,7 +29,9 @@ import AIThinkingIndicator from '../common/AIThinkingIndicator';
 
 const SAMPLE_QUERIES = [
   'What are the latest synthesis pathways for fluorinated aromatics?',
-  'Predict 1H and 13C NMR chemical shifts for Aspirin ester bond'
+  'Predict 1H and 13C NMR chemical shifts for Aspirin ester bond',
+  'Calculate HOMO-LUMO bandgap for conductive conjugated polymers',
+  'Analyze Lipinski Rule of 5 and TPSA for Caffeine with SMILES'
 ];
 
 export default function TavilyHeroSection() {
@@ -93,12 +95,12 @@ export default function TavilyHeroSection() {
 
   return (
     <section className="relative w-full overflow-hidden select-none font-sans py-14 px-4 sm:px-8 transition-colors duration-500">
-      
+
       {/* ───────────────────────────────────────────────────────────────────────
           SCENIC / 3D AMBIENT ATMOSPHERIC BACKGROUND (Exact Match to Screenshot 5)
          ─────────────────────────────────────────────────────────────────────── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl mx-2 sm:mx-6 border border-neutral-200/60 dark:border-neutral-850">
-        
+
         {/* Soft Scenic Warm Gradient Horizon */}
         <div
           className="absolute inset-0 transition-opacity duration-700 opacity-90 dark:opacity-40"
@@ -126,7 +128,7 @@ export default function TavilyHeroSection() {
           preserveAspectRatio="none"
         >
           <path
-            fill={isDark ? '#050a0f' : '#8fa89b'}
+            fill={isDark ? '#020202ff' : '#8fa89b'}
             d="M0,224L48,202.7C96,181,192,139,288,144C384,149,480,203,576,218.7C672,235,768,213,864,186.7C960,160,1056,128,1152,133.3C1248,139,1344,181,1392,202.7L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
           />
         </svg>
@@ -136,7 +138,7 @@ export default function TavilyHeroSection() {
           HEADER BAR OVER SCENIC HERO
          ─────────────────────────────────────────────────────────────────────── */}
       <div className="relative z-20 max-w-6xl mx-auto space-y-10 sm:space-y-14">
-        
+
         {/* Top Mini Brand Navigation */}
         <div className="flex items-center justify-between px-2 sm:px-6">
           {/* Brand Mark: ChemSpace AI */}
@@ -184,7 +186,7 @@ export default function TavilyHeroSection() {
             CENTER HERO COPY
            ─────────────────────────────────────────────────────────────────────── */}
         <div className="text-center max-w-3xl mx-auto space-y-4 pt-2 sm:pt-4">
-          
+
           {/* Main Headline */}
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-neutral-950 dark:text-white leading-[1.08]">
             Connect your AI agents <br className="hidden sm:inline" />
@@ -200,7 +202,7 @@ export default function TavilyHeroSection() {
 
           {/* Action Buttons: [Launch Interactive Studio] [Copy Setup Code] */}
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-            
+
             {/* Launch Studio Pill */}
             <button
               onClick={() => handleExecuteSearch()}
@@ -215,11 +217,10 @@ export default function TavilyHeroSection() {
               <button
                 type="button"
                 onClick={handleCopySetupPrompt}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs sm:text-sm font-medium transition cursor-pointer ${
-                  isDark
-                    ? 'bg-black/40 border-neutral-700 text-neutral-200 hover:border-neutral-500'
-                    : 'bg-white/80 border-neutral-300 text-neutral-800 hover:border-neutral-400'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs sm:text-sm font-medium transition cursor-pointer ${isDark
+                  ? 'bg-black/40 border-neutral-700 text-neutral-200 hover:border-neutral-500'
+                  : 'bg-white/80 border-neutral-300 text-neutral-800 hover:border-neutral-400'
+                  }`}
               >
                 {copiedPrompt ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 opacity-60" />}
                 <span>{copiedPrompt ? 'Copied code!' : 'Copy setup code'}</span>
@@ -249,11 +250,10 @@ export default function TavilyHeroSection() {
            ─────────────────────────────────────────────────────────────────────── */}
         <div className="max-w-2xl mx-auto relative z-20">
           <div
-            className={`rounded-2xl sm:rounded-3xl border p-4 sm:p-5 backdrop-blur-xl shadow-2xl transition-all ${
-              isDark
-                ? 'bg-neutral-900/80 border-neutral-700/80 shadow-[0_20px_60px_rgba(0,0,0,0.6)]'
-                : 'bg-white/85 border-white/80 shadow-[0_20px_50px_rgba(43,103,94,0.15)]'
-            }`}
+            className={`rounded-2xl sm:rounded-3xl border p-4 sm:p-5 backdrop-blur-xl shadow-2xl transition-all ${isDark
+              ? 'bg-neutral-900/80 border-neutral-700/80 shadow-[0_20px_60px_rgba(0,0,0,0.6)]'
+              : 'bg-white/85 border-white/80 shadow-[0_20px_50px_rgba(43,103,94,0.15)]'
+              }`}
           >
             {/* Input Field */}
             <div className="relative">
@@ -274,7 +274,7 @@ export default function TavilyHeroSection() {
 
             {/* Bottom Row: Pill Mode Switcher & Circular Send Button */}
             <div className="flex items-center justify-between pt-2 border-t border-neutral-200/50 dark:border-neutral-800">
-              
+
               {/* Pill Modes: search, synthesis, spectra, quantum */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 {[
@@ -289,11 +289,10 @@ export default function TavilyHeroSection() {
                       key={mode.id}
                       type="button"
                       onClick={() => setActiveTab(mode.id)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-neutral-800 text-white font-bold'
-                          : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
-                      }`}
+                      className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${isActive
+                        ? 'bg-neutral-800 text-white font-bold'
+                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                        }`}
                     >
                       {mode.label}
                     </button>
@@ -306,11 +305,10 @@ export default function TavilyHeroSection() {
                 type="button"
                 onClick={() => handleExecuteSearch()}
                 disabled={!promptText.trim() || isSearching}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm shrink-0 ${
-                  promptText.trim() && !isSearching
-                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-black hover:scale-105 active:scale-95'
-                    : 'bg-neutral-700/60 text-neutral-400 cursor-not-allowed'
-                }`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm shrink-0 ${promptText.trim() && !isSearching
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-black hover:scale-105 active:scale-95'
+                  : 'bg-neutral-700/60 text-neutral-400 cursor-not-allowed'
+                  }`}
                 title="Execute Live Search"
               >
                 {isSearching ? (

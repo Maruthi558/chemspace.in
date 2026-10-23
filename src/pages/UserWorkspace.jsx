@@ -26,7 +26,8 @@ import {
   Clock,
   UserCheck,
   Sparkles,
-  Bot
+  Bot,
+  Star
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -50,6 +51,7 @@ import ScientistReviewsGlowSection from '../components/workspace/ScientistReview
 import ChevronsUpDownIcon from '../components/ui/ChevronsUpDownIcon';
 import WorkspaceAICopilot from '../components/workspace/WorkspaceAICopilot';
 import { usePersistedWork } from '../services/workPersistence';
+import ScientistFeedbackModal from '../components/feedback/ScientistFeedbackModal';
 
 export default function UserWorkspace() {
   const navigate = useNavigate();
@@ -58,6 +60,7 @@ export default function UserWorkspace() {
 
   const [activeTab, setActiveTab] = usePersistedWork('chemspace_user_workspace_tab', 'history'); // 'history' | 'downloads' | 'ai'
   const [activeCategory, setActiveCategory] = usePersistedWork('chemspace_user_workspace_cat', 'all');
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = usePersistedWork('chemspace_user_workspace_sort', 'newest');
   const [historyItems, setHistoryItems] = useState([]);
@@ -183,6 +186,15 @@ export default function UserWorkspace() {
           >
             <Bot className="w-3.5 h-3.5 text-orange-400" />
             <span>Launch Floating AI</span>
+          </button>
+
+          <button
+            onClick={() => setFeedbackModalOpen(true)}
+            className="px-4 py-1.5 rounded-2xl border border-orange-500/50 bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-orange-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-orange-400 font-bold font-mono text-xs flex items-center gap-1.5 transition cursor-pointer shadow-[0_0_15px_rgba(249,115,22,0.15)] active:scale-95"
+            title="Open ChemSpace Scientist Problem & Feedback Gateway"
+          >
+            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            <span>⭐ Feedback Gateway</span>
           </button>
         </div>
       </div>
@@ -322,7 +334,7 @@ export default function UserWorkspace() {
                 <Database className="w-8 h-8 text-[var(--text-muted)] mx-auto stroke-[1.5]" />
                 <div className="font-mono font-bold text-xs text-[var(--text-primary)]">No History Records Found</div>
                 <div className="text-[11px] font-mono text-[var(--text-secondary)] max-w-xs mx-auto">
-                  Your authentic actions across ChemDraw, RDKit, Quantum, and IBM RXN will appear here.
+                  Your authentic actions across ChemDraw, RDKit, Quantum, and ARXN Synthesis will appear here.
                 </div>
               </div>
             ) : (
@@ -424,6 +436,12 @@ export default function UserWorkspace() {
           </div>
         </div>
       )}
+
+      {/* Direct Scientist Feedback Gateway Modal */}
+      <ScientistFeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+      />
     </div>
   );
 }

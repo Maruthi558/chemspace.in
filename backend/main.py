@@ -210,6 +210,28 @@ def init_db():
         )
     ''')
 
+    # Customer and Scientist Feedback Table (Dispatched via dynamic gateway)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS customer_feedback (
+            id TEXT PRIMARY KEY,
+            target_email TEXT NOT NULL DEFAULT 'support@chemspace.org',
+            rating INTEGER NOT NULL,
+            grade TEXT,
+            grade_label TEXT,
+            pathway TEXT NOT NULL,
+            problem_title TEXT,
+            description TEXT,
+            customer_name TEXT,
+            customer_email TEXT,
+            scientist_type TEXT DEFAULT 'male',
+            priority TEXT DEFAULT 'normal',
+            client_info_json TEXT DEFAULT '{}',
+            status TEXT DEFAULT 'received',
+            created_at REAL NOT NULL
+        )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_feedback_created ON customer_feedback(created_at DESC)')
+
     conn.commit()
     conn.close()
 
@@ -2506,6 +2528,9 @@ if _chemistry_llm_router:
     app.include_router(_chemistry_llm_router)
 
 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY") or ""
+OPENAI_BACKEND_MODELS = ["gpt-4o-mini", "gpt-4o", "chatgpt-4o-latest"]
+
 GOOGLE_AI_STUDIO_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_AI_STUDIO_API_KEY") or ""
 GEMINI_BACKEND_MODELS = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"]
 
@@ -2513,6 +2538,53 @@ CHEMSPACE_DEFAULT_SYSTEM_PROMPT = """You are ChemSpace AI, an advanced, highly c
 Explain organic, inorganic, physical, and biochemistry concepts clearly.
 Generate canonical SMILES, formulas, IUPAC names, and spectra interpretations when requested.
 Be mathematically rigorous, scientifically reliable, and friendly."""
+
+
+def call_openai_api(query: str, system_prompt: str = None, history: list = None) -> Optional[dict]:
+    """
+    Direct call to OpenAI Chat Completions API with candidate model fallback.
+    """
+    if not OPENAI_API_KEY:
+        return None
+
+    messages = [{"role": "system", "content": system_prompt or CHEMSPACE_DEFAULT_SYSTEM_PROMPT}]
+    if history and isinstance(history, list):
+        for h in history[-6:]:
+            role = "assistant" if h.get("role") == "assistant" else "user"
+            content = h.get("content") or ""
+            if content:
+                messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": query})
+
+    for model in OPENAI_BACKEND_MODELS:
+        try:
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0.35,
+                "max_tokens": 2048,
+                "top_p": 0.95
+            }
+            req = urllib.request.Request(
+                "https://api.openai.com/v1/chat/completions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {OPENAI_API_KEY}"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                text = data["choices"][0]["message"]["content"]
+                return {
+                    "text": text,
+                    "model": model,
+                    "provider": "OpenAI (GPT-4o)"
+                }
+        except Exception:
+            continue
+    return None
+
 
 
 def call_google_ai_studio_gemini(query: str, system_prompt: str = None, history: list = None) -> Optional[dict]:
@@ -2579,11 +2651,41 @@ async def ai_chat_assistant(chat_input: AIChatInput):
     system_prompt = getattr(chat_input, "systemPrompt", None) or CHEMSPACE_DEFAULT_SYSTEM_PROMPT
     history = getattr(chat_input, "history", [])
 
-    # 1. Primary: Google AI Studio Gemini Real-Time Reasoning (async thread)
+    # 1. Primary: OpenAI Chat Completions (if key configured)
+    openai_result = None
+    if OPENAI_API_KEY:
+        try:
+            openai_result = await asyncio.to_thread(call_openai_api, query, system_prompt, history)
+        except Exception:
+            openai_result = None
+
+    if openai_result and openai_result.get("text"):
+        return {
+            "status": "success",
+            "provider": openai_result["provider"],
+            "connected": True,
+            "step": 8,
+            "model": openai_result["model"],
+            "query": query,
+            "response": openai_result["text"],
+            "responseText": openai_result["text"],
+            "intent": "chemistry",
+            "confidence": 0.99,
+            "conversation_id": getattr(chat_input, "conversation_id", "session_default"),
+            "tool_used": True,
+            "tools": ["OpenAI GPT-4o", "Scientific Chemistry Intelligence"],
+            "citations": [],
+            "warnings": [],
+            "metadata": {"provider": "OpenAI", "model": openai_result["model"]},
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+
+    # 2. Secondary: Google AI Studio Gemini Real-Time Reasoning (async thread)
     try:
         gemini_result = await asyncio.to_thread(call_google_ai_studio_gemini, query, system_prompt, history)
     except Exception:
         gemini_result = None
+
 
     if gemini_result and gemini_result.get("text"):
         return {
@@ -2682,8 +2784,69 @@ async def ai_chat_stream(chat_input: AIChatInput):
     async def event_generator():
         streamed_any = False
 
-        # 1. Try streaming from Google AI Studio Gemini API via SSE
+        # 1. Try streaming from OpenAI via SSE
+        if OPENAI_API_KEY:
+            messages = [{"role": "system", "content": system_prompt}]
+            if history and isinstance(history, list):
+                for h in history[-6:]:
+                    role = "assistant" if h.get("role") == "assistant" else "user"
+                    text_content = h.get("content") or ""
+                    if text_content:
+                        messages.append({"role": role, "content": text_content})
+            messages.append({"role": "user", "content": query})
+
+            for model in OPENAI_BACKEND_MODELS:
+                try:
+                    payload = {
+                        "model": model,
+                        "messages": messages,
+                        "temperature": 0.35,
+                        "max_tokens": 2048,
+                        "top_p": 0.95,
+                        "stream": True
+                    }
+                    req = urllib.request.Request(
+                        "https://api.openai.com/v1/chat/completions",
+                        data=json.dumps(payload).encode("utf-8"),
+                        headers={
+                            "Content-Type": "application/json",
+                            "Authorization": f"Bearer {OPENAI_API_KEY}"
+                        }
+                    )
+                    with urllib.request.urlopen(req, timeout=12) as resp:
+                        meta_payload = {
+                            'type': 'metadata',
+                            'intent': 'CHEMISTRY',
+                            'metadata': {'provider': 'OpenAI', 'model': model},
+                            'citations': [],
+                            'tools': [f'OpenAI ({model})', 'Real-time Chemistry Intelligence'],
+                            'tool_used': True,
+                        }
+                        yield f"data: {json.dumps(meta_payload)}\n\n"
+
+                        for line in resp:
+                            decoded = line.decode("utf-8").strip()
+                            if decoded.startswith("data:"):
+                                chunk_str = decoded[5:].strip()
+                                if chunk_str and chunk_str != "[DONE]":
+                                    try:
+                                        parsed = json.loads(chunk_str)
+                                        delta_text = parsed.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                        if delta_text:
+                                            streamed_any = True
+                                            yield f"data: {json.dumps({'type': 'delta', 'content': delta_text})}\n\n"
+                                    except Exception:
+                                        pass
+                        if streamed_any:
+                            yield f"data: {json.dumps({'type': 'done', 'metadata': {'model': model}, 'tool_used': True})}\n\n"
+                            yield "data: [DONE]\n\n"
+                            return
+                except Exception:
+                    continue
+
+        # 2. Try streaming from Google AI Studio Gemini API via SSE
         if GOOGLE_AI_STUDIO_API_KEY:
+
             contents = []
             if history and isinstance(history, list):
                 for h in history[-6:]:
@@ -3598,6 +3761,117 @@ async def approve_research_plan(req: ApprovePlanRequest):
     except Exception as e:
         logger.exception("Error approving plan: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class FeedbackIn(BaseModel):
+    id: Optional[str] = None
+    target_email: Optional[str] = "support@chemspace.org"
+    rating: int = 5
+    grade: Optional[str] = "Grade A+"
+    grade_label: Optional[str] = "Exceptional / Breakthrough Research"
+    pathway: str = "customer_problem"
+    problem_title: str = "User Feedback"
+    description: str = ""
+    customer_name: Optional[str] = "Anonymous Scientist"
+    customer_email: Optional[str] = ""
+    scientist_type: Optional[str] = "male"
+    priority: Optional[str] = "normal"
+    client_info: Optional[Dict[str, Any]] = None
+
+
+@app.post("/api/feedback")
+async def receive_scientist_feedback(fb: FeedbackIn):
+    """Receives scientist feedback, customer problem reports, and star ratings directed to any gateway recipient"""
+    feedback_id = fb.id or f"fb_{int(time.time())}_{secrets.token_hex(3)}"
+    target = fb.target_email or "support@chemspace.org"
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO customer_feedback (
+                id, target_email, rating, grade, grade_label, pathway,
+                problem_title, description, customer_name, customer_email,
+                scientist_type, priority, client_info_json, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            feedback_id, target, fb.rating, fb.grade, fb.grade_label, fb.pathway,
+            fb.problem_title, fb.description, fb.customer_name, fb.customer_email,
+            fb.scientist_type, fb.priority, json.dumps(fb.client_info or {}), "dispatched", time.time()
+        ))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Error persisting feedback to SQLite: {e}")
+
+    logger.info(
+        f"[ChemSpace Feedback] Dispatched to {target} | Grade: {fb.grade} ({fb.rating}★) | "
+        f"Pathway: {fb.pathway} | Title: {fb.problem_title} | From: {fb.customer_name} <{fb.customer_email}>"
+    )
+
+    # Attempt Resend / SMTP email dispatch if configured in environment
+    email_dispatched = False
+    resend_key = os.getenv("RESEND_API_KEY")
+    if resend_key:
+        try:
+            resend_url = "https://api.resend.com/emails"
+            from_email = os.getenv("RESEND_FROM", "ChemSpace Support <support@chemspace.org>")
+            resend_payload = json.dumps({
+                "from": from_email,
+                "to": [target],
+                "subject": f"[ChemSpace Feedback - {fb.grade}] {fb.problem_title}",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; background: #0c0d12; color: #f8fafc; padding: 24px; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
+                    <h2 style="color: #38bdf8; margin-top: 0;">ChemSpace Scientist Feedback Report</h2>
+                    <p style="color: #94a3b8; font-size: 13px;">Target Recipient: <strong>{target}</strong></p>
+                    <div style="background: #181c2b; padding: 16px; border-radius: 8px; margin: 16px 0; border: 1px solid #334155;">
+                        <p style="margin: 4px 0;"><strong>Rating:</strong> {'⭐' * fb.rating} ({fb.grade} - {fb.grade_label})</p>
+                        <p style="margin: 4px 0;"><strong>Pathway:</strong> {fb.pathway}</p>
+                        <p style="margin: 4px 0;"><strong>Scientist Persona:</strong> {fb.scientist_type.capitalize()} Scientist</p>
+                        <p style="margin: 4px 0;"><strong>Customer:</strong> {fb.customer_name} ({fb.customer_email})</p>
+                        <p style="margin: 4px 0;"><strong>Priority:</strong> {fb.priority.upper()}</p>
+                    </div>
+                    <h3>Customer Problem / Description:</h3>
+                    <div style="background: #0f172a; padding: 16px; border-radius: 8px; border-left: 4px solid #38bdf8; white-space: pre-wrap; color: #e2e8f0; font-family: monospace; font-size: 13px;">
+                        {fb.description}
+                    </div>
+                </div>
+                """
+            }).encode('utf-8')
+            req = urllib.request.Request(
+                resend_url,
+                data=resend_payload,
+                headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 201):
+                    email_dispatched = True
+        except Exception as e:
+            logger.warning(f"Resend feedback dispatch notice: {e}")
+
+    return {
+        "status": "success",
+        "message": f"Feedback registered and queued for direct dispatch to {target}",
+        "feedback_id": feedback_id,
+        "recipient": target,
+        "email_dispatched": email_dispatched,
+        "grade": fb.grade
+    }
+
+
+@app.get("/api/feedback")
+async def list_feedbacks():
+    """Retrieve list of feedbacks received in the platform"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM customer_feedback ORDER BY created_at DESC LIMIT 50")
+        rows = cursor.fetchall()
+        conn.close()
+        return {"items": [dict(r) for r in rows]}
+    except Exception as e:
+        return {"items": [], "error": str(e)}
 
 
 # Serve built Vite frontend static files if dist folder exists

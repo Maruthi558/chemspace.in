@@ -28,6 +28,8 @@ Formatting guidelines:
 - Use clean GitHub-flavored markdown, bullet points, and code blocks for SMILES, reaction schemes, and Python/RDKit code.
 - Be friendly, authoritative, precise, and scientifically reliable. Always identify as ChemSpace AI.`;
 
+import { streamOpenAIChat, callOpenAIChat, getOpenAIApiKey } from './openaiService.js';
+
 export function getGeminiApiKey() {
   const custom = typeof localStorage !== 'undefined'
     ? (localStorage.getItem('chemspace_gemini_key') || localStorage.getItem('chemspace_ai_key') || localStorage.getItem('gemini_api_key'))
@@ -58,10 +60,24 @@ export function hasCustomGeminiApiKey() {
  * Stream real-time tokens from ChemSpace DeepChem LLM engine via Server-Sent Events (SSE)
  */
 export async function* streamGeminiChat(query, { history = [], systemPrompt = CHEMSPACE_SYSTEM_INSTRUCTION, signal = null } = {}) {
+  const openAiKey = getOpenAIApiKey();
+  if (openAiKey) {
+    try {
+      for await (const chunk of streamOpenAIChat(query, { history, systemPrompt, signal })) {
+        yield chunk;
+      }
+      return;
+    } catch (openAiErr) {
+      if (openAiErr.name === 'AbortError') throw openAiErr;
+      console.warn('[streamGeminiChat] OpenAI streaming unavailable, falling back to Gemini:', openAiErr.message);
+    }
+  }
+
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
     throw new Error('ChemSpace Intelligence Engine is currently running in local offline mode.');
   }
+
 
   // Format conversation history
   const contents = [];
@@ -173,10 +189,24 @@ export async function* streamGeminiChat(query, { history = [], systemPrompt = CH
  * Standard single-shot request to ChemSpace DeepChem LLM engine
  */
 export async function callGeminiChat(query, { history = [], systemPrompt = CHEMSPACE_SYSTEM_INSTRUCTION, signal = null } = {}) {
+  const openAiKey = getOpenAIApiKey();
+  if (openAiKey) {
+    try {
+      const res = await callOpenAIChat(query, { history, systemPrompt, signal });
+      if (res && res.responseText) {
+        return res;
+      }
+    } catch (openAiErr) {
+      if (openAiErr.name === 'AbortError') throw openAiErr;
+      console.warn('[callGeminiChat] OpenAI call unavailable, falling back to Gemini:', openAiErr.message);
+    }
+  }
+
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
     throw new Error('ChemSpace Intelligence Engine is running in local offline mode.');
   }
+
 
   const contents = [];
   if (Array.isArray(history) && history.length > 0) {

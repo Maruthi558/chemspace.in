@@ -48,10 +48,10 @@ const RESEARCH_EXPERIENCES = [
     ],
   },
   {
-    id: 'ibm-rxn-collab',
-    companyName: 'IBM RXN Retrosynthesis & Reaction Intelligence Pipeline',
+    id: 'arxn-collab',
+    companyName: 'ARXN Retrosynthesis & Reaction Intelligence Pipeline',
     emoji: '🧪',
-    companyWebsite: 'https://rxn.res.ibm.com',
+    companyWebsite: 'https://chemspace.in/ibm-rxn',
     positions: [
       {
         id: 'pos-3',
@@ -64,7 +64,7 @@ const RESEARCH_EXPERIENCES = [
         icon: <Activity className="size-3.5 text-rose-500" />,
         description: `- Developed multi-step tree search algorithms comparing forward yield estimates against commercial precursor building blocks.
 - Formatted automated mechanism visualizers with transition state barrier thermodynamics.`,
-        skills: ['IBM RXN', 'Retrosynthesis Trees', 'Reaction SMILES', 'Kinetic Barriers'],
+        skills: ['ARXN Synthesis', 'Retrosynthesis Trees', 'Reaction SMILES', 'Kinetic Barriers'],
       }
     ]
   }

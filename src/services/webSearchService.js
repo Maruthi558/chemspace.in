@@ -6,6 +6,7 @@
  */
 
 import { getGeminiApiKey } from './geminiService.js';
+import { callOpenAIChat, getOpenAIApiKey } from './openaiService.js';
 
 const DEFAULT_TAVILY_KEY = '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';
 
@@ -16,8 +17,8 @@ export function getTavilyApiKey() {
   }
 
   const envKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TAVILY_API_KEY) ||
-                 (typeof import.meta !== 'undefined' && import.meta.env?.TAVILY_API_KEY) ||
-                 (typeof import.meta !== 'undefined' && import.meta.env?.CHEMNOVA_SEARCH_API_KEY);
+    (typeof import.meta !== 'undefined' && import.meta.env?.TAVILY_API_KEY) ||
+    (typeof import.meta !== 'undefined' && import.meta.env?.CHEMNOVA_SEARCH_API_KEY);
 
   if (envKey && envKey.trim()) return envKey.trim();
   return DEFAULT_TAVILY_KEY;
@@ -94,7 +95,7 @@ export async function searchPubChemCompound(query, { signal = null } = {}) {
 
   // Extract possible compound name using regex heuristics
   const candidateNames = [];
-  
+
   // Specific known compounds check
   const knownKeywords = [
     'aspirin', 'caffeine', 'paracetamol', 'acetaminophen', 'ibuprofen',
@@ -299,17 +300,16 @@ export async function* streamScientificSearch(query, mode = 'search', { signal =
 
   if (signal && signal.aborted) return;
 
-  // Check if Gemini AI key is available for deep LLM synthesis
+  // Check if OpenAI or Gemini AI key is available for deep LLM synthesis
+  const openAiKey = getOpenAIApiKey();
   const geminiKey = getGeminiApiKey();
-  let synthesizedViaGemini = false;
-  let fullGeminiText = '';
+  let synthesizedViaLLM = false;
+  let fullLLMText = '';
 
-  if (geminiKey) {
-    try {
-      const literatureContext = tavilyResults.map((r, i) => `[${i + 1}] ${r.title} (${r.domain}): ${r.snippet}`).join('\n\n');
-      const compoundContext = pubchemData ? `PubChem Data: IUPAC=${pubchemData.iupac}, Formula=${pubchemData.formula}, MW=${pubchemData.mw}, SMILES=${pubchemData.smiles}, LogP=${pubchemData.xlogp}, TPSA=${pubchemData.tpsa}` : '';
+  const literatureContext = tavilyResults.map((r, i) => `[${i + 1}] ${r.title} (${r.domain}): ${r.snippet}`).join('\n\n');
+  const compoundContext = pubchemData ? `PubChem Data: IUPAC=${pubchemData.iupac}, Formula=${pubchemData.formula}, MW=${pubchemData.mw}, SMILES=${pubchemData.smiles}, LogP=${pubchemData.xlogp}, TPSA=${pubchemData.tpsa}` : '';
 
-      const groundedPrompt = `You are ChemSpace AI conducting real-time scientific web research.
+  const groundedPrompt = `You are ChemSpace AI conducting real-time scientific web research.
 Target Query: "${cleanQ}"
 Mode: ${mode.toUpperCase()}
 
@@ -325,6 +325,26 @@ Please synthesize a rigorous, crystal-clear, structured chemical research report
 3. Discussion of recent literature findings and conclusions.
 Format cleanly with GitHub-flavored markdown and bullet points.`;
 
+  // 1. Try OpenAI GPT-4o synthesis
+  if (openAiKey) {
+    try {
+      const openAiRes = await callOpenAIChat(groundedPrompt, {
+        systemPrompt: 'You are ChemSpace AI conducting real-time scientific chemical research.',
+        signal
+      });
+      if (openAiRes?.responseText && openAiRes.responseText.trim()) {
+        fullLLMText = openAiRes.responseText.trim();
+        synthesizedViaLLM = true;
+      }
+    } catch (oErr) {
+      if (oErr.name === 'AbortError') throw oErr;
+      console.warn('[WebSearchService] OpenAI grounded synthesis skipped, trying Gemini:', oErr.message);
+    }
+  }
+
+  // 2. Try Gemini synthesis fallback
+  if (!synthesizedViaLLM && geminiKey) {
+    try {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
       const geminiRes = await fetch(geminiUrl, {
         method: 'POST',
@@ -340,8 +360,8 @@ Format cleanly with GitHub-flavored markdown and bullet points.`;
         const geminiJson = await geminiRes.json();
         const text = geminiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text && text.trim()) {
-          fullGeminiText = text.trim();
-          synthesizedViaGemini = true;
+          fullLLMText = text.trim();
+          synthesizedViaLLM = true;
         }
       }
     } catch (gErr) {
@@ -369,9 +389,10 @@ Format cleanly with GitHub-flavored markdown and bullet points.`;
     );
   }
 
-  const outputText = synthesizedViaGemini && fullGeminiText
-    ? fullGeminiText
+  const outputText = synthesizedViaLLM && fullLLMText
+    ? fullLLMText
     : synthesizeChemicalAnalysis(cleanQ, mode, { tavilyResults, pubchemData, wikiData }).text;
+
 
   // Smoothly stream the text in chunks for a seamless animation
   const words = outputText.split(' ');

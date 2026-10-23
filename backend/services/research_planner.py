@@ -13,7 +13,7 @@ import json
 import uuid
 import logging
 import urllib.request
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass, field, asdict
 
 from .tool_registry import tool_registry, ToolReadiness

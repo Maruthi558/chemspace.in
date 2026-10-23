@@ -1867,7 +1867,7 @@ export default function ChemDrawStudio() {
             <Trash2 className="w-4.5 h-4.5" />
           </button>
 
-          {/* Import / Export Buttons & IBM RXN Dispatch */}
+          {/* Import / Export Buttons & ARXN Dispatch */}
           <button
             type="button"
             onClick={() => {
@@ -1879,9 +1879,9 @@ export default function ChemDrawStudio() {
               }
             }}
             className="px-3.5 py-2 text-xs font-black rounded-2xl flex items-center gap-1.5 bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-violet-400 dark:text-violet-300 transition cursor-pointer"
-            title="Plan reaction or retrosynthesis with IBM RXN"
+            title="Plan reaction or retrosynthesis with ARXN"
           >
-            <Workflow className="w-3.5 h-3.5" /> Plan in IBM RXN
+            <Workflow className="w-3.5 h-3.5" /> Plan in ARXN
           </button>
           <button
             onClick={() => setShowImportModal(true)}

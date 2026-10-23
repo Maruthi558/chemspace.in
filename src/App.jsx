@@ -54,8 +54,9 @@ export default function App() {
                 <Route element={<Layout />}>
                   <Route path="/" element={<Landing />} />
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/ai-workspace" element={<AIAutomationCenter />} />
                   <Route path="/ai-automation" element={<AIAutomationCenter />} />
-                  <Route path="/ai-automation-center" element={<Navigate to="/ai-automation" replace />} />
+                  <Route path="/ai-automation-center" element={<Navigate to="/ai-workspace" replace />} />
                   <Route path="/chemdraw" element={<ChemDraw />} />
                   <Route path="/rdkit-lab" element={<AIChemistryLab />} />
                   <Route path="/quantum-library" element={<QuantumLab />} />

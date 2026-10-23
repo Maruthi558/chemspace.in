@@ -17,7 +17,8 @@ import {
   FlaskConical,
   Atom,
   Box,
-  Binary
+  Binary,
+  BookOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -69,11 +70,11 @@ export function Hero01({ className = "" }) {
           {/* Core Lab Route Links */}
           <nav className="hidden md:flex items-center gap-5 text-xs font-mono">
             <button
-              onClick={() => navigate("/ai-automation")}
+              onClick={() => navigate("/ai-workspace")}
               className="text-cyan-400 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1.5 font-bold"
             >
               <Bot className="w-3.5 h-3.5 text-cyan-400" />
-              <span>AI Automation Central</span>
+              <span>AI Workspace</span>
             </button>
             <button
               onClick={() => navigate("/chemdraw")}
@@ -108,20 +109,20 @@ export function Hero01({ className = "" }) {
               className="text-[var(--text-secondary)] hover:text-rose-500 transition cursor-pointer flex items-center gap-1.5"
             >
               <Activity className="w-3 h-3 text-rose-500" />
-              <span>IBM RXN</span>
+              <span>ARXN</span>
             </button>
           </nav>
 
           {/* Header Actions */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate("/ai-automation")}
+              onClick={() => navigate("/ai-workspace")}
               className="hidden sm:flex px-2.5 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-xs font-mono font-bold text-cyan-400 hover:text-cyan-300 transition cursor-pointer items-center gap-1.5 shadow-xs"
-              title="Open AI Automation Central"
+              title="Open AI Workspace"
             >
               <Bot className="w-3.5 h-3.5 text-cyan-400" />
-              <span>AI Automation</span>
-              <span className="text-[9px] px-1 rounded bg-cyan-400/20 text-cyan-300">NEW</span>
+              <span>AI Workspace</span>
+              <span className="text-[9px] px-1 rounded bg-cyan-400/20 text-cyan-300">AGENTIC</span>
             </button>
 
             <button
@@ -131,6 +132,15 @@ export function Hero01({ className = "" }) {
             >
               <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
               <span>ChemSpace AI</span>
+            </button>
+
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-manual'))}
+              className="px-2.5 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-xs font-mono font-bold text-cyan-300 hover:text-white transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+              title="Open Platform User Manual & Button Guide"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Manual</span>
             </button>
 
             <button
@@ -401,7 +411,7 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
       {/* Main Action Buttons */}
       <div className="mb-6 flex flex-wrap items-center gap-3 sm:mb-8">
         <Button
-          onClick={() => navigate("/ai-automation")}
+          onClick={() => navigate("/ai-workspace")}
           className="bg-gradient-to-r from-cyan-500 via-sky-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white font-extrabold border border-cyan-300/40 px-6 sm:px-7 py-3 rounded-xl shadow-lg shadow-cyan-500/30 cursor-pointer text-sm flex items-center gap-2 active:scale-95 transition relative overflow-hidden group"
           size="lg"
         >
@@ -410,9 +420,9 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
           </span>
           <Bot className="w-4 h-4 text-cyan-100 group-hover:rotate-12 transition-transform" />
-          <span>AI Automation Central</span>
+          <span>AI Workspace</span>
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white font-semibold">
-            LITEFOLD + 3D
+            AGENTIC AI
           </span>
         </Button>
 
@@ -432,6 +442,16 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
         >
           <Sparkles className="w-4 h-4 text-emerald-200 animate-pulse" />
           <span>ChemSpace AI Copilot</span>
+        </Button>
+
+        <Button
+          onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-manual'))}
+          className="bg-gradient-to-r from-cyan-900/40 via-sky-900/30 to-teal-900/40 hover:from-cyan-800/50 hover:to-teal-800/50 text-cyan-200 hover:text-white font-bold border border-cyan-400/40 px-5 sm:px-6 py-3 rounded-xl shadow-lg shadow-cyan-950/40 cursor-pointer text-sm flex items-center gap-2 active:scale-95 transition"
+          size="lg"
+          title="Open ChemSpace User Manual & Platform Guide"
+        >
+          <BookOpen className="w-4 h-4 text-cyan-400 animate-pulse" />
+          <span>Platform Manual &amp; Guide</span>
         </Button>
 
         <Button
@@ -457,7 +477,7 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
           <TechItem icon={<Cpu className="w-4 h-4 text-emerald-500" />} title="RDKit WASM" />
           <TechItem icon={<Zap className="w-4 h-4 text-violet-500" />} title="DFT Quantum" />
           <TechItem icon={<Radio className="w-4 h-4 text-amber-500" />} title="FTIR • NMR" />
-          <TechItem icon={<Activity className="w-4 h-4 text-rose-500" />} title="IBM RXN Synth" />
+          <TechItem icon={<Activity className="w-4 h-4 text-rose-500" />} title="ARXN Synth" />
           <TechItem icon={<Atom className="w-4 h-4 text-teal-500" />} title="MMFF94 Force Field" />
         </div>
       </div>

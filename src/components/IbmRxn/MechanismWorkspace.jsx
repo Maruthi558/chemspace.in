@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   GitBranch,
   Play,
+  Pause,
   RotateCcw,
   Minus,
   Layers,
@@ -41,7 +42,9 @@ import {
   ShieldCheck,
   MousePointer2,
   PenTool,
-  HelpCircle
+  HelpCircle,
+  Sparkles,
+  Filter
 } from 'lucide-react';
 import ThreeMoleculeViewer from '../ThreeMoleculeViewer';
 import { useTheme } from '../../context/ThemeContext';
@@ -134,12 +137,31 @@ export default function MechanismWorkspace({
   // ── 5. MODALS & PANELS ──
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateSearch, setTemplateSearch] = useState('');
+  const [templateCategory, setTemplateCategory] = useState('all');
+  const [templateSort, setTemplateSort] = useState('name_asc');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(2000);
   const [showFragmentModal, setShowFragmentModal] = useState(false);
   const [fragmentSearch, setFragmentSearch] = useState('');
   const [fragmentCategory, setFragmentCategory] = useState('all');
   const [show3DModal, setShow3DModal] = useState(false);
   const [active3DSmiles, setActive3DSmiles] = useState('');
   const [comparisonMode, setComparisonMode] = useState(false); // side-by-side before/after
+
+  // Step player animation timer
+  useEffect(() => {
+    if (!isPlaying) return;
+    const timer = setInterval(() => {
+      setActiveStepIndex((prev) => {
+        if (prev >= steps.length - 1) {
+          setIsPlaying(false);
+          return 0;
+        }
+        return prev + 1;
+      });
+    }, playbackSpeed);
+    return () => clearInterval(timer);
+  }, [isPlaying, playbackSpeed, steps.length]);
 
   const currentStep = steps[activeStepIndex] || steps[0];
 
@@ -165,9 +187,64 @@ export default function MechanismWorkspace({
     setMechanismDrivingForce(template.drivingForce || '');
     setSteps(JSON.parse(JSON.stringify(template.steps)));
     setActiveStepIndex(0);
+    setIsPlaying(false);
     setShowTemplateModal(false);
-    logActivity('IBM RXN', 'Loaded Mechanism Template', template.name, 'reaction');
+    logActivity('ARXN', 'Loaded Mechanism Template', template.name, 'reaction');
   };
+
+  // Filter & sort mechanism templates
+  const filteredTemplates = useMemo(() => {
+    return MECHANISM_TEMPLATES.filter((tpl) => {
+      const q = templateSearch.toLowerCase();
+      const matchesSearch =
+        !templateSearch ||
+        tpl.name.toLowerCase().includes(q) ||
+        tpl.class.toLowerCase().includes(q) ||
+        (tpl.subclass && tpl.subclass.toLowerCase().includes(q)) ||
+        (tpl.description && tpl.description.toLowerCase().includes(q));
+
+      if (!matchesSearch) return false;
+
+      if (templateCategory === 'all') return true;
+      if (templateCategory === 'modern') {
+        return (
+          tpl.id === 'click_cuaac' ||
+          tpl.id === 'buchwald_hartwig' ||
+          tpl.class.toLowerCase().includes('cross-coupling') ||
+          (tpl.subclass && tpl.subclass.toLowerCase().includes('click'))
+        );
+      }
+      if (templateCategory === 'rare') {
+        return (
+          tpl.id === 'wittig_olefination' ||
+          tpl.id === 'radical_bromination' ||
+          tpl.class.toLowerCase().includes('olefination')
+        );
+      }
+      if (templateCategory === 'substitution') {
+        return tpl.class.toLowerCase().includes('substitution');
+      }
+      if (templateCategory === 'addition') {
+        return (
+          tpl.class.toLowerCase().includes('cycloaddition') ||
+          tpl.class.toLowerCase().includes('addition')
+        );
+      }
+      if (templateCategory === 'elimination') {
+        return tpl.class.toLowerCase().includes('elimination');
+      }
+      if (templateCategory === 'reduction') {
+        return tpl.class.toLowerCase().includes('reduction');
+      }
+      return true;
+    }).sort((a, b) => {
+      if (templateSort === 'name_asc') return a.name.localeCompare(b.name);
+      if (templateSort === 'steps_desc') return b.steps.length - a.steps.length;
+      if (templateSort === 'steps_asc') return a.steps.length - b.steps.length;
+      if (templateSort === 'class_asc') return a.class.localeCompare(b.class);
+      return 0;
+    });
+  }, [templateSearch, templateCategory, templateSort]);
 
   // ── 7. STEP MANAGEMENT ──
   const handleAddStep = () => {
@@ -846,8 +923,54 @@ ${currentStep.description}
       </div>
 
       {/* ── STEP NAVIGATION TIMELINE BAR ── */}
-      <div className="glass-panel p-3 rounded-2xl border border-[var(--border-subtle)] flex items-center justify-between gap-3 overflow-x-auto custom-scrollbar">
-        <div className="flex items-center gap-2">
+      <div className="glass-panel p-3 rounded-2xl border border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
+          {/* Automated Playback Controls */}
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-black/40 border border-white/10 shrink-0">
+            <button
+              onClick={() => setActiveStepIndex((prev) => Math.max(0, prev - 1))}
+              disabled={activeStepIndex === 0}
+              className="p-1 rounded-lg hover:bg-white/10 text-slate-300 disabled:opacity-30 transition"
+              title="Previous Step"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1.5 transition ${
+                isPlaying
+                  ? 'bg-amber-400 text-slate-950 shadow-md animate-pulse'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black'
+              }`}
+              title={isPlaying ? 'Pause Reaction Mechanism Player' : 'Auto-Play Reaction Mechanism Steps'}
+            >
+              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              <span className="text-[10px] tracking-wider">{isPlaying ? 'PAUSE' : 'PLAY'}</span>
+            </button>
+            <button
+              onClick={() => setActiveStepIndex((prev) => Math.min(steps.length - 1, prev + 1))}
+              disabled={activeStepIndex >= steps.length - 1}
+              className="p-1 rounded-lg hover:bg-white/10 text-slate-300 disabled:opacity-30 transition"
+              title="Next Step"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <div className="h-4 w-px bg-white/15 mx-1" />
+            <select
+              value={playbackSpeed}
+              onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+              className="bg-transparent text-[10px] text-cyan-300 font-bold focus:outline-none cursor-pointer"
+              title="Step transition delay"
+            >
+              <option value={1000} className="bg-slate-900 text-white">1.0s</option>
+              <option value={2000} className="bg-slate-900 text-white">2.0s</option>
+              <option value={3000} className="bg-slate-900 text-white">3.0s</option>
+            </select>
+          </div>
+
+          <div className="h-5 w-px bg-white/10 hidden sm:block shrink-0" />
+
+          {/* Step Sequence Pills */}
           {steps.map((step, idx) => (
             <React.Fragment key={step.stepNumber}>
               <button
@@ -1473,56 +1596,141 @@ ${currentStep.description}
 
       {/* ── MECHANISM TEMPLATES MODAL ── */}
       {showTemplateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="relative w-full max-w-3xl glass-panel p-6 rounded-3xl border border-cyan-500/40 bg-[#060913] space-y-4 max-h-[85vh] flex flex-col text-xs text-[var(--text-primary)]">
-            <div className="flex items-center justify-between border-b border-inherit pb-3">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-cyan-400" />
-                <h2 className="text-sm font-black uppercase text-white">
-                  Organic Reaction Mechanism Templates Library
-                </h2>
-              </div>
-              <button
-                onClick={() => setShowTemplateModal(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="relative">
-              <Search className="w-4 h-4 text-cyan-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={templateSearch}
-                onChange={(e) => setTemplateSearch(e.target.value)}
-                placeholder="Search templates (e.g. SN2, Fischer, Friedel-Crafts, Diels-Alder, Hydride Reduction)..."
-                className="input-control pl-9 pr-3 py-2 text-xs rounded-xl w-full"
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pr-1">
-              {MECHANISM_TEMPLATES.filter((t) =>
-                t.name.toLowerCase().includes(templateSearch.toLowerCase()) ||
-                t.class.toLowerCase().includes(templateSearch.toLowerCase())
-              ).map((tpl) => (
-                <div
-                  key={tpl.id}
-                  onClick={() => handleLoadTemplate(tpl)}
-                  className="p-3.5 rounded-2xl inner-box border border-white/5 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition cursor-pointer space-y-1.5 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <strong className="text-xs text-cyan-300 font-bold group-hover:text-cyan-200">
-                      {tpl.name}
-                    </strong>
-                    <span className="px-2 py-0.5 rounded-md bg-black/40 text-cyan-400 font-bold text-[10px]">
-                      {tpl.steps.length} Steps
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-slate-400">{tpl.class} • {tpl.subclass}</div>
-                  <p className="text-[11px] text-[var(--text-secondary)] font-sans">{tpl.description}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="relative w-full max-w-4xl glass-panel p-6 rounded-3xl border border-cyan-500/40 bg-[#060913] space-y-4 max-h-[88vh] flex flex-col text-xs text-[var(--text-primary)] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                  <BookOpen className="w-4 h-4" />
                 </div>
+                <div>
+                  <h2 className="text-sm font-black uppercase text-white tracking-wide">
+                    ARXN Organic Mechanism Templates Library
+                  </h2>
+                  <p className="text-[10px] text-slate-400">
+                    Curated modern &amp; rare organic transformation pathways with electron arrow bookkeeping
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 font-black text-[10px] border border-cyan-500/30">
+                  {filteredTemplates.length} Available
+                </span>
+                <button
+                  onClick={() => setShowTemplateModal(false)}
+                  className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Search and Sort Row */}
+            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+              <div className="relative flex-1 w-full">
+                <Search className="w-4 h-4 text-cyan-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={templateSearch}
+                  onChange={(e) => setTemplateSearch(e.target.value)}
+                  placeholder="Search templates (e.g. CuAAC Click, Buchwald-Hartwig, Wittig, SN2, Diels-Alder)..."
+                  className="input-control pl-9 pr-3 py-2 text-xs rounded-xl w-full border border-white/10 focus:border-cyan-400"
+                />
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                <span className="text-[10px] text-slate-400 shrink-0 font-bold">Sort:</span>
+                <select
+                  value={templateSort}
+                  onChange={(e) => setTemplateSort(e.target.value)}
+                  className="input-control px-2.5 py-1.5 text-xs rounded-xl bg-slate-900 border border-white/10 text-slate-200 focus:outline-none"
+                >
+                  <option value="name_asc">Name (A-Z)</option>
+                  <option value="steps_desc">Steps: Most to Least</option>
+                  <option value="steps_asc">Steps: Least to Most</option>
+                  <option value="class_asc">Reaction Class</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Category / Era Filter Badges */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar shrink-0">
+              {[
+                { id: 'all', label: 'All Reactions' },
+                { id: 'modern', label: '⭐ Modern & Nobel (2000s+)' },
+                { id: 'rare', label: '🔬 Rare & Specialty' },
+                { id: 'substitution', label: 'Substitution' },
+                { id: 'addition', label: 'Cycloaddition' },
+                { id: 'elimination', label: 'Elimination' },
+                { id: 'reduction', label: 'Reduction' }
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setTemplateCategory(cat.id)}
+                  className={`px-3 py-1 rounded-xl text-[10px] font-bold transition whitespace-nowrap border ${
+                    templateCategory === cat.id
+                      ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-black shadow-md'
+                      : 'bg-white/5 border-transparent text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {cat.label}
+                </button>
               ))}
+            </div>
+
+            {/* Templates List */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pr-1">
+              {filteredTemplates.length === 0 ? (
+                <div className="py-8 text-center text-slate-400">
+                  <HelpCircle className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  <p className="text-xs">No mechanism templates found matching your criteria.</p>
+                  <button
+                    onClick={() => { setTemplateSearch(''); setTemplateCategory('all'); }}
+                    className="mt-2 text-cyan-400 hover:underline text-[11px]"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              ) : (
+                filteredTemplates.map((tpl) => (
+                  <div
+                    key={tpl.id}
+                    onClick={() => handleLoadTemplate(tpl)}
+                    className="p-3.5 rounded-2xl inner-box border border-white/5 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition cursor-pointer space-y-1.5 group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <strong className="text-xs text-cyan-300 font-bold group-hover:text-cyan-200">
+                          {tpl.name}
+                        </strong>
+                        {(tpl.id === 'click_cuaac' || tpl.id === 'buchwald_hartwig') && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[9px] font-black border border-amber-500/30">
+                            Nobel Prize
+                          </span>
+                        )}
+                        {tpl.id === 'wittig_olefination' && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 text-[9px] font-black border border-purple-500/30">
+                            Rare Olefination
+                          </span>
+                        )}
+                      </div>
+                      <span className="px-2 py-0.5 rounded-md bg-black/40 text-cyan-400 font-bold text-[10px]">
+                        {tpl.steps.length} Steps
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 flex items-center gap-2">
+                      <span className="text-cyan-400 font-semibold">{tpl.class}</span>
+                      <span>•</span>
+                      <span>{tpl.subclass}</span>
+                    </div>
+                    <p className="text-[11px] text-[var(--text-secondary)] font-sans">{tpl.description}</p>
+                    {tpl.drivingForce && (
+                      <div className="text-[10px] text-emerald-400/90 font-mono">
+                        ⚡ Driving force: {tpl.drivingForce}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

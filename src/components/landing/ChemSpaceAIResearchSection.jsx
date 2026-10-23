@@ -29,7 +29,9 @@ import AIThinkingIndicator from '../common/AIThinkingIndicator';
 
 const SAMPLE_QUERIES = [
   'What are the latest synthesis pathways for fluorinated aromatics?',
-  'Predict 1H and 13C NMR chemical shifts for Aspirin ester bond'
+  'Predict 1H and 13C NMR chemical shifts for Aspirin ester bond',
+  'Calculate HOMO-LUMO bandgap for conductive conjugated polymers',
+  'Analyze Lipinski Rule of 5 and TPSA for Caffeine with canonical SMILES'
 ];
 
 export default function ChemSpaceAIResearchSection() {

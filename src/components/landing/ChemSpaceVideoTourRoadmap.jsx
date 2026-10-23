@@ -128,7 +128,7 @@ const CHAPTERS = [
   },
   {
     id: 'rxn',
-    title: '6. IBM RXN Retrosynthesis',
+    title: '6. ARXN Retrosynthesis',
     time: '1:15 - 1:30',
     startSec: 75,
     endSec: 90,
@@ -898,7 +898,7 @@ export default function ChemSpaceVideoTourRoadmap() {
               <div className="p-4 rounded-2xl bg-[var(--home-surface-subtle)] border border-[var(--home-border)] space-y-2">
                 <span className="text-xs font-bold text-rose-500 flex items-center gap-1.5">
                   <Activity className="w-4 h-4" />
-                  5. IBM RXN Retrosynthesis
+                  5. ARXN Retrosynthesis
                 </span>
                 <p className="text-xs text-[var(--home-text-secondary)] leading-relaxed">
                   Perform algorithmic forward reaction predictions and multi-step retrosynthetic disconnections. View full reaction pathways with temperature, solvents, and commercial precursor feedstock matches.

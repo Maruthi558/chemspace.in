@@ -93,6 +93,7 @@ export function getRecentlyUsed(limit = 8) {
     'RDKit Lab': '/rdkit-lab',
     'Spectroscopy': '/spectroscopy',
     'Quantum Lab': '/quantum-library',
+    'ARXN': '/ibm-rxn',
     'IBM RXN': '/ibm-rxn',
     'Chromatography': '/chromatography',
     'Periodic Table': '/periodic-table',

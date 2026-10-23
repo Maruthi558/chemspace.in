@@ -11,6 +11,8 @@ import {
   translateScientificQuery
 } from './languageDetector.js';
 import { streamGeminiChat, callGeminiChat } from './geminiService.js';
+import { streamOpenAIChat, callOpenAIChat, getOpenAIApiKey } from './openaiService.js';
+
 
 // Scientific terminology phoneme & speech transcription correction dictionary
 const SCIENTIFIC_CORRECTIONS = {
@@ -48,7 +50,10 @@ const SCIENTIFIC_CORRECTIONS = {
   'spectroscopy': 'Spectroscopy',
   'mass spectrometry': 'Mass Spectrometry',
   'uv vis': 'UV-Vis',
-  'ibm rxn': 'IBM RXN',
+  'arxn': 'ARXN',
+  'arxn synthesis': 'ARXN',
+  'rxn': 'ARXN',
+  'ibm rxn': 'ARXN',
   'chromatography': 'Chromatography',
   'hplc': 'HPLC',
   'gc': 'GC',
@@ -332,7 +337,47 @@ class AICopilotService {
       }
     }
 
-    // 2. Direct Real-Time Streaming via ChemSpace DeepChem LLM Engine
+    // 2. Direct Real-Time Streaming via OpenAI (Primary)
+    if (!streamedSuccess && getOpenAIApiKey()) {
+      try {
+        let accumulatedAiText = '';
+        for await (const chunk of streamOpenAIChat(sanitizedQuery, {
+          history: this.history,
+          systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
+          signal
+        })) {
+          if (signal && signal.aborted) break;
+          accumulatedAiText = chunk.text;
+          streamedSuccess = true;
+          yield {
+            text: accumulatedAiText,
+            delta: chunk.delta,
+            isDone: chunk.isDone,
+            citations: [],
+            metadata: { provider: 'ChemSpace OpenAI Intelligence', model: chunk.model || 'gpt-4o-mini' },
+            tools: ['OpenAI GPT-4o', 'Scientific Chemical Intelligence'],
+            tool_used: true
+          };
+        }
+
+        if (accumulatedAiText) {
+          this.history.push({ role: 'user', content: sanitizedQuery });
+          this.history.push({
+            role: 'assistant',
+            content: accumulatedAiText,
+            metadata: { provider: 'ChemSpace OpenAI Intelligence' },
+            tools: ['OpenAI GPT-4o'],
+            tool_used: true
+          });
+          return;
+        }
+      } catch (openAiErr) {
+        if (signal && signal.aborted) throw openAiErr;
+        console.warn('[AICopilotService] OpenAI streaming interrupted, trying fallback:', openAiErr.message);
+      }
+    }
+
+    // 3. Streaming via Gemini LLM Engine (Fallback)
     if (!streamedSuccess) {
       try {
         let accumulatedAiText = '';
@@ -371,7 +416,50 @@ class AICopilotService {
       }
     }
 
-    // 3. Direct Single-Shot Gemini Request if SSE stream had an interruption
+    // 4. Direct Single-Shot OpenAI Request
+    if (!streamedSuccess && getOpenAIApiKey()) {
+      try {
+        const openAiRes = await callOpenAIChat(sanitizedQuery, {
+          history: this.history,
+          systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
+          signal
+        });
+        if (openAiRes?.responseText) {
+          streamedSuccess = true;
+          const fullText = openAiRes.responseText;
+          const words = fullText.split(' ');
+          let cur = '';
+          for (let i = 0; i < words.length; i += 3) {
+            if (signal && signal.aborted) break;
+            const chunk = words.slice(i, i + 3).join(' ');
+            const addition = (cur ? ' ' : '') + chunk;
+            cur += addition;
+            yield {
+              text: cur,
+              delta: addition,
+              isDone: i + 3 >= words.length,
+              metadata: { provider: 'ChemSpace OpenAI Intelligence', model: openAiRes.model || 'gpt-4o-mini' },
+              tools: ['OpenAI GPT-4o'],
+              tool_used: true
+            };
+            await new Promise((r) => setTimeout(r, 6));
+          }
+          this.history.push({ role: 'user', content: sanitizedQuery });
+          this.history.push({
+            role: 'assistant',
+            content: fullText,
+            metadata: { provider: 'ChemSpace OpenAI Intelligence' },
+            tools: ['OpenAI GPT-4o'],
+            tool_used: true
+          });
+          return;
+        }
+      } catch (openAiSingleErr) {
+        if (openAiSingleErr.name === 'AbortError') throw openAiSingleErr;
+      }
+    }
+
+    // 5. Direct Single-Shot Gemini Request if SSE stream had an interruption
     if (!streamedSuccess) {
       try {
         const geminiRes = await callGeminiChat(sanitizedQuery, {
@@ -413,6 +501,7 @@ class AICopilotService {
         if (singleShotErr.name === 'AbortError') throw singleShotErr;
       }
     }
+
 
     // 4. Fallback: Instant high-fidelity client reasoning engine
     if (!streamedSuccess) {
@@ -457,8 +546,25 @@ class AICopilotService {
       (!API_URL.startsWith('http') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
     );
 
-    // If static hosting, directly query Gemini engine
+    // If static hosting, directly query OpenAI / Gemini engine
     if (isStaticDeploy) {
+      if (getOpenAIApiKey()) {
+        try {
+          const openAiRes = await callOpenAIChat(sanitizedQuery, {
+            history: this.history,
+            systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
+            signal
+          });
+          if (openAiRes && openAiRes.responseText) {
+            this.history.push({ role: 'user', content: sanitizedQuery });
+            this.history.push({ role: 'assistant', content: openAiRes.responseText });
+            return openAiRes;
+          }
+        } catch (openAiErr) {
+          if (openAiErr.name === 'AbortError') throw openAiErr;
+        }
+      }
+
       try {
         const geminiRes = await callGeminiChat(sanitizedQuery, {
           history: this.history,
@@ -533,9 +639,29 @@ class AICopilotService {
       if (error.name === 'AbortError') {
         throw error;
       }
+
+      // 1. Attempt OpenAI API call first
+      if (getOpenAIApiKey()) {
+        try {
+          const openAiRes = await callOpenAIChat(sanitizedQuery, {
+            history: this.history,
+            systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
+            signal
+          });
+          if (openAiRes && openAiRes.responseText) {
+            this.history.push({ role: 'user', content: sanitizedQuery });
+            this.history.push({ role: 'assistant', content: openAiRes.responseText });
+            return openAiRes;
+          }
+        } catch (openAiErr) {
+          if (openAiErr.name === 'AbortError') throw openAiErr;
+          console.warn('[AICopilotService] OpenAI direct query fallback:', openAiErr.message);
+        }
+      }
+
       console.warn('[AICopilotService] Backend chat unavailable, trying Google AI Studio Gemini API:', error.message);
 
-      // Attempt direct Google AI Studio Gemini API call
+      // 2. Attempt direct Google AI Studio Gemini API call
       try {
         const geminiRes = await callGeminiChat(sanitizedQuery, {
           history: this.history,
@@ -558,6 +684,7 @@ class AICopilotService {
       this.history.push({ role: 'assistant', content: fallback.responseText });
       return fallback;
     }
+
   }
 
   async generateClientFallbackResponse(query, context = {}, langInfo = null) {

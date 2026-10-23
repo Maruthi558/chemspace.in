@@ -237,7 +237,7 @@ export default function Dashboard() {
         >
           <div className="flex items-center justify-between">
             <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1.5 font-sans font-bold">
-              <Activity className="w-4 h-4 text-amber-400" /> RXN Synthesis
+              <Activity className="w-4 h-4 text-amber-400" /> ARXN Synthesis
             </span>
             <span className="text-[9px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
               R-COOR'
