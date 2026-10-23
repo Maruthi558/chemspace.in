@@ -44,6 +44,35 @@ const STANDARD_MOLECULES = {
   'CCOC(=O)C': { name: 'Ethyl Acetate', formula: 'C4H8O2', counts: { C: 4, H: 8, O: 2 }, mw: 88.105, monoisotopic: 88.05243 }
 };
 
+// Common chemical names mapped directly to valid canonical SMILES
+const COMMON_NAMES_TO_SMILES = {
+  'aspirin': 'CC(=O)OC1=CC=CC=C1C(=O)O',
+  'acetylsalicylic acid': 'CC(=O)OC1=CC=CC=C1C(=O)O',
+  'paracetamol': 'CC(=O)NC1=CC=C(O)C=C1',
+  'acetaminophen': 'CC(=O)NC1=CC=C(O)C=C1',
+  'caffeine': 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C',
+  'ibuprofen': 'CC(C)CC1=CC=C(C=C1)C(C)C(=O)O',
+  'benzene': 'c1ccccc1',
+  'acetone': 'CC(=O)C',
+  'propanone': 'CC(=O)C',
+  'benzaldehyde': 'c1ccccc1C=O',
+  'ethyl acetate': 'CCOC(=O)C',
+  'ethanol': 'CCO',
+  'ethyl alcohol': 'CCO',
+  'acetic acid': 'CC(=O)O',
+  'ethanoic acid': 'CC(=O)O',
+  'methanol': 'CO',
+  'methyl alcohol': 'CO',
+  'water': 'O',
+  'toluene': 'Cc1ccccc1',
+  'phenol': 'Oc1ccccc1',
+  'aniline': 'Nc1ccccc1',
+  'benzoic acid': 'O=C(O)c1ccccc1',
+  'salicylic acid': 'O=C(O)c1ccccc1O',
+  'glucose': 'C(C1C(C(C(C(O1)O)O)O)O)O',
+  'acetic anhydride': 'CC(=O)OC(=O)C'
+};
+
 // ==========================================
 // 1. STRUCTURE PARSER & VALIDATOR
 // ==========================================
@@ -61,6 +90,23 @@ export function validateAndParseStructure(input) {
   // Detect Format: MDL Molfile / SDF vs SMILES
   if (trimmed.includes('M  END') || trimmed.includes('V2000') || trimmed.includes('V3000') || trimmed.includes('$$$$')) {
     return parseMolfileOrSdf(trimmed);
+  }
+
+  // Check if input is a chemical name (e.g. "Aspirin", "Paracetamol", "Ethanol", "Caffeine")
+  const cleanKey = trimmed.toLowerCase();
+  if (COMMON_NAMES_TO_SMILES[cleanKey]) {
+    const resolvedSmiles = COMMON_NAMES_TO_SMILES[cleanKey];
+    const res = parseSmilesStructure(resolvedSmiles);
+    if (res.valid) {
+      res.name = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    }
+    return res;
+  }
+
+  for (const [smiKey, val] of Object.entries(STANDARD_MOLECULES)) {
+    if (val.name.toLowerCase() === cleanKey || val.name.toLowerCase().startsWith(cleanKey)) {
+      return parseSmilesStructure(smiKey);
+    }
   }
 
   // Otherwise Parse as SMILES

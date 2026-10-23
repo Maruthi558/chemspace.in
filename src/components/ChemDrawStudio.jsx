@@ -62,6 +62,7 @@ import { logActivity } from '../services/activityStore';
 import { recordDownload } from '../services/downloadsManager';
 import DownloadTransactionMenu from './common/DownloadTransactionMenu';
 import ChevronsUpDownIcon from './ui/ChevronsUpDownIcon';
+import { usePersistedWork, loadPersistedWork } from '../services/workPersistence';
 
 // Bond Definitions
 const BOND_DEFINITIONS = [
@@ -120,23 +121,25 @@ export default function ChemDrawStudio() {
   const isNewlyPlacedStartAtomRef = useRef(false);
 
   // Studio Tools: 'select', 'eraser', 'bond', 'atom', 'ring', 'fragment', 'lasso', 'charge_pos', 'charge_neg'
-  const [selectedTool, setSelectedTool] = useState('bond');
-  const [activeBondType, setActiveBondType] = useState('single');
-  const [activeElement, setActiveElement] = useState('C');
-  const [activeRing, setActiveRing] = useState('benzene');
-  const [activeFragment, setActiveFragment] = useState('ch3');
+  const [selectedTool, setSelectedTool] = usePersistedWork('chemspace_chemdraw_tool', 'bond');
+  const [activeBondType, setActiveBondType] = usePersistedWork('chemspace_chemdraw_bond_type', 'single');
+  const [activeElement, setActiveElement] = usePersistedWork('chemspace_chemdraw_element', 'C');
+  const [activeRing, setActiveRing] = usePersistedWork('chemspace_chemdraw_ring', 'benzene');
+  const [activeFragment, setActiveFragment] = usePersistedWork('chemspace_chemdraw_fragment', 'ch3');
 
-  // Molecular Graph State
-  const [atoms, setAtoms] = useState([
-    // Initial friendly starting structure: Ethanol
+  // Molecular Graph State with persistent session memory
+  const DEFAULT_INITIAL_ATOMS = [
     { id: 1, element: 'C', x: 280, y: 250, charge: 0 },
     { id: 2, element: 'C', x: 330, y: 220, charge: 0 },
     { id: 3, element: 'O', x: 380, y: 250, charge: 0 }
-  ]);
-  const [bonds, setBonds] = useState([
+  ];
+  const DEFAULT_INITIAL_BONDS = [
     { id: 101, from: 1, to: 2, type: 'single', order: 1 },
     { id: 102, from: 2, to: 3, type: 'single', order: 1 }
-  ]);
+  ];
+
+  const [atoms, setAtoms] = usePersistedWork('chemspace_chemdraw_atoms', DEFAULT_INITIAL_ATOMS);
+  const [bonds, setBonds] = usePersistedWork('chemspace_chemdraw_bonds', DEFAULT_INITIAL_BONDS);
 
   // History Stack
   const [history, setHistory] = useState([
@@ -1866,11 +1869,16 @@ export default function ChemDrawStudio() {
 
           {/* Import / Export Buttons & IBM RXN Dispatch */}
           <button
+            type="button"
             onClick={() => {
               const currentSmi = generateGraphSMILES(atoms, bonds);
-              navigate('/ibm-rxn');
+              if (currentSmi) {
+                navigate(`/ibm-rxn?target=${encodeURIComponent(currentSmi)}`);
+              } else {
+                navigate('/ibm-rxn');
+              }
             }}
-            className="px-3.5 py-2 text-xs font-black rounded-2xl flex items-center gap-1.5 bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-violet-400 dark:text-violet-300 transition"
+            className="px-3.5 py-2 text-xs font-black rounded-2xl flex items-center gap-1.5 bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-violet-400 dark:text-violet-300 transition cursor-pointer"
             title="Plan reaction or retrosynthesis with IBM RXN"
           >
             <Workflow className="w-3.5 h-3.5" /> Plan in IBM RXN

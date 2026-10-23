@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { FileText, Plus, Edit2, Trash2, CheckCircle2, AlertCircle, Save, X, Bookmark, Tag } from 'lucide-react';
 import { createNote, deleteNote, getNotes, updateNote } from '../services/api';
 import ButtonSpinner from '../components/common/ButtonSpinner';
+import { usePersistedWork } from '../services/workPersistence';
 
 const CATEGORIES = ['Experiment', 'Synthesis Protocol', 'Spectral Analysis', 'Quantum Run', 'Literature Note', 'General'];
 
 export default function Notes() {
   const [notes, setNotes] = useState([]);
-  const [form, setForm] = useState({ title: '', content: '', category: 'Experiment' });
+  const [form, setForm] = usePersistedWork('chemspace_notes_draft_form', { title: '', content: '', category: 'Experiment' });
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

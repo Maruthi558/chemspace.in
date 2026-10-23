@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import {
   Activity,
   BarChart2,
@@ -29,8 +30,9 @@ import ButtonSpinner from './common/ButtonSpinner';
 import SpectroscopyWaveChart from './spectroscopy/SpectroscopyWaveChart';
 import ChevronsUpDownIcon from './ui/ChevronsUpDownIcon';
 import DownloadTransactionMenu from './common/DownloadTransactionMenu';
+import { usePersistedWork, loadPersistedWork } from '../services/workPersistence';
 
-// Curated reference library of benchmark molecules for quick 1-click spectroscopy testing
+// Curated 2-sample reference benchmarks for fast 1-click spectroscopy verification
 const PRESET_MOLECULES = [
   {
     name: 'Aspirin',
@@ -45,84 +47,54 @@ const PRESET_MOLECULES = [
     smiles: 'CC(=O)NC1=CC=C(O)C=C1',
     category: 'Antipyretic / Amide',
     tagColor: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
-  },
-  {
-    name: 'Caffeine',
-    formula: 'C₈H₁₀N₄O₂',
-    smiles: 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C',
-    category: 'Purine Alkaloid',
-    tagColor: 'border-amber-500/30 text-amber-400 bg-amber-500/10'
-  },
-  {
-    name: 'Ibuprofen',
-    formula: 'C₁₃H₁₈O₂',
-    smiles: 'CC(C)CC1=CC=C(C=C1)C(C)C(=O)O',
-    category: 'NSAID / Acid',
-    tagColor: 'border-blue-500/30 text-blue-400 bg-blue-500/10'
-  },
-  {
-    name: 'Benzaldehyde',
-    formula: 'C₇H₆O',
-    smiles: 'c1ccccc1C=O',
-    category: 'Aromatic Aldehyde',
-    tagColor: 'border-orange-500/30 text-orange-400 bg-orange-500/10'
-  },
-  {
-    name: 'Ethyl Acetate',
-    formula: 'C₄H₈O₂',
-    smiles: 'CCOC(=O)C',
-    category: 'Aliphatic Ester',
-    tagColor: 'border-purple-500/30 text-purple-400 bg-purple-500/10'
-  },
-  {
-    name: 'Acetone',
-    formula: 'C₃H₆O',
-    smiles: 'CC(=O)C',
-    category: 'Ketone Solvent',
-    tagColor: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10'
-  },
-  {
-    name: 'Benzene',
-    formula: 'C₆H₆',
-    smiles: 'c1ccccc1',
-    category: 'Aromatic Ring',
-    tagColor: 'border-violet-500/30 text-violet-400 bg-violet-500/10'
-  },
-  {
-    name: 'Ethanol',
-    formula: 'C₂H₆O',
-    smiles: 'CCO',
-    category: 'Primary Alcohol',
-    tagColor: 'border-teal-500/30 text-teal-400 bg-teal-500/10'
-  },
-  {
-    name: 'Acetic Acid',
-    formula: 'C₂H₄O₂',
-    smiles: 'CC(=O)O',
-    category: 'Carboxylic Acid',
-    tagColor: 'border-yellow-500/30 text-yellow-400 bg-yellow-500/10'
   }
 ];
 
 export default function SpectroscopySuite() {
-  // Input & Simulation State
-  const [smilesInput, setSmilesInput] = useState('CC(=O)OC1=CC=CC=C1C(=O)O');
-  const [dossier, setDossier] = useState(() => calculateFullSpectroscopyDossier('CC(=O)OC1=CC=CC=C1C(=O)O'));
-  const [activeTechnique, setActiveTechnique] = useState('ir'); // ir, uv, nmr, ms
-  const [nmrSubTab, setNmrSubTab] = useState('1h'); // 1h, 13c
-  const [irDisplayMode, setIrDisplayMode] = useState('transmittance'); // transmittance, absorbance
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  // Input & Simulation State with persistence across tabs/sessions
+  const [smilesInput, setSmilesInput] = usePersistedWork('chemspace_spectroscopy_smiles', 'CC(=O)OC1=CC=CC=C1C(=O)O');
+  const [dossier, setDossier] = useState(() => {
+    const initialSmiles = loadPersistedWork('chemspace_spectroscopy_smiles', 'CC(=O)OC1=CC=CC=C1C(=O)O');
+    return calculateFullSpectroscopyDossier(initialSmiles);
+  });
+  const [activeTechnique, setActiveTechnique] = usePersistedWork('chemspace_spectroscopy_technique', 'ir'); // ir, uv, nmr, ms
+  const [nmrSubTab, setNmrSubTab] = usePersistedWork('chemspace_spectroscopy_nmr_subtab', '1h'); // 1h, 13c
+  const [irDisplayMode, setIrDisplayMode] = usePersistedWork('chemspace_spectroscopy_ir_mode', 'transmittance'); // transmittance, absorbance
   const [searchFilter, setSearchFilter] = useState('');
   const [showTheoryGuide, setShowTheoryGuide] = useState(false);
   const [copiedSmiles, setCopiedSmiles] = useState(false);
 
   // Beer-Lambert Simulator State
-  const [concentration, setConcentration] = useState(0.0025);
-  const [pathLength, setPathLength] = useState(1.0);
+  const [concentration, setConcentration] = usePersistedWork('chemspace_spectroscopy_conc', 0.0025);
+  const [pathLength, setPathLength] = usePersistedWork('chemspace_spectroscopy_path', 1.0);
 
   // Loading & Error States
   const [isCalculating, setIsCalculating] = useState(false);
   const [errorModal, setErrorModal] = useState(null); // { title, reason }
   const [exportSuccess, setExportSuccess] = useState(false);
+
+  // Check URL query params or chemspace_active_mol from AI Copilot / IBM RXN on mount
+  useEffect(() => {
+    const paramSmiles = searchParams.get('smiles') || searchParams.get('q');
+    if (paramSmiles && paramSmiles.trim()) {
+      handleAnalyze(paramSmiles.trim());
+      return;
+    }
+
+    try {
+      const activeStr = localStorage.getItem('chemspace_active_mol');
+      if (activeStr) {
+        const parsed = JSON.parse(activeStr);
+        if (parsed?.smiles) {
+          handleAnalyze(parsed.smiles);
+          localStorage.removeItem('chemspace_active_mol');
+        }
+      }
+    } catch {}
+  }, [location.search]);
 
   // Core Simulation Function
   function handleAnalyze(targetSmiles) {
@@ -132,19 +104,16 @@ export default function SpectroscopySuite() {
       return;
     }
 
-    if (targetSmiles !== undefined) {
-      setSmilesInput(targetSmiles);
-    }
-
     setIsCalculating(true);
     try {
       const result = calculateFullSpectroscopyDossier(query);
       if (!result.valid) {
         setIsCalculating(false);
-        showErrorModal('Invalid molecular structure.', result.reason || 'The provided SMILES syntax could not be parsed or contains invalid chemical valencies.');
+        showErrorModal('Invalid molecular structure.', result.reason || 'The provided structure could not be parsed or contains invalid chemical valencies.');
         return;
       }
 
+      setSmilesInput(result.metadata.smiles || query);
       setDossier(result);
 
       logActivity(
@@ -280,22 +249,17 @@ export default function SpectroscopySuite() {
         </div>
       </div>
 
+
       {/* ───────────────────────────────────────────────────────────────────────
-          2. PRESET MOLECULE BENCHMARK BUTTONS ROW
+          2. CURATED 2-SAMPLE BENCHMARK PRESETS (CLEAN & MINIMAL)
          ─────────────────────────────────────────────────────────────────────── */}
-      <div className="glass-panel p-4 rounded-2xl space-y-2.5 shadow-md">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-bold text-neutral-800 dark:text-neutral-200">
-            <FlaskConical className="w-3.5 h-3.5 text-orange-500" />
-            <span>Curated Reference Samples (1-Click Instant Analysis):</span>
-          </div>
-          <span className="text-[10px] opacity-60 font-mono hidden sm:inline">
-            Click any specimen to load complete spectra
-          </span>
+      <div className="glass-panel p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-md">
+        <div className="flex items-center gap-2 text-xs font-bold text-neutral-800 dark:text-neutral-200 shrink-0">
+          <FlaskConical className="w-3.5 h-3.5 text-orange-500" />
+          <span>Curated Benchmarks:</span>
         </div>
 
-        {/* Tactile Button Row */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 scrollbar-thin">
+        <div className="flex items-center gap-2">
           {PRESET_MOLECULES.map((item) => {
             const isSelected = smilesInput === item.smiles;
             return (
@@ -322,15 +286,15 @@ export default function SpectroscopySuite() {
       </div>
 
       {/* ───────────────────────────────────────────────────────────────────────
-          3. PRIMARY SMILES INPUT BAR
+          3. PRIMARY SMILES & MOLECULE INPUT BAR
          ─────────────────────────────────────────────────────────────────────── */}
       <div className="glass-panel p-4 rounded-2xl flex flex-col md:flex-row items-center gap-3 shadow-lg">
         <div className="flex items-center gap-2 w-full flex-1">
-          <span className="text-xs font-bold shrink-0 opacity-80">SMILES Structure:</span>
+          <span className="text-xs font-bold shrink-0 opacity-80">Structure / Name:</span>
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Enter canonical SMILES (e.g. CCO, c1ccccc1, CC(=O)OC1=CC=CC=C1C(=O)O)..."
+              placeholder="Enter canonical SMILES or Chemical Name (e.g. Aspirin, Paracetamol, CCO, c1ccccc1)..."
               value={smilesInput}
               onChange={(e) => setSmilesInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
@@ -348,12 +312,14 @@ export default function SpectroscopySuite() {
             )}
           </div>
           <button
+            id="spectroscopy-analyze-btn"
             onClick={() => handleAnalyze()}
             disabled={isCalculating}
-            className="btn-horizontal btn-orange text-xs shrink-0 group shadow-lg font-bold"
+            className="btn-horizontal btn-orange text-xs shrink-0 group shadow-lg font-bold cursor-pointer"
+            title="Compute full spectroscopic simulation dossier"
           >
             {isCalculating ? <ButtonSpinner className="text-white" /> : <Activity className="w-3.5 h-3.5" />}
-            <span>{isCalculating ? 'Computing Spectra...' : 'Analyze Structure'}</span>
+            <span>{isCalculating ? 'Computing Spectra...' : 'Spectroscopy Analysis'}</span>
             {!isCalculating && <ArrowRight className="w-3.5 h-3.5 arrow-micro text-white/80" />}
           </button>
         </div>

@@ -218,7 +218,17 @@ export default function QuantumResultDashboard({ result }) {
                               </td>
                               <td className="p-2">{energy.toFixed(3)}</td>
                               <td className="p-2 text-right">
-                                <button className="text-[10px] text-emerald-400 font-bold hover:underline">3D</button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedOrbital(i);
+                                  }}
+                                  className="text-[10px] text-emerald-400 font-bold hover:underline cursor-pointer"
+                                  title={`Visualize Orbital ${label} in 3D`}
+                                >
+                                  3D
+                                </button>
                               </td>
                             </tr>
                           );

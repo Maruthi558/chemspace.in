@@ -21,6 +21,7 @@ import NotebookCell from '../components/notebook/NotebookCell';
 import { executePythonScript, resetNotebookSession } from '../services/api';
 import { logActivity } from '../services/activityStore';
 import { useTheme } from '../context/ThemeContext';
+import { usePersistedWork } from '../services/workPersistence';
 
 /**
  * INITIAL SCIENTIFIC NOTEBOOK WORKFLOW
@@ -198,7 +199,7 @@ export default function AIChemistryLab() {
     }
   });
 
-  const [cells, setCells] = useState(DEFAULT_INITIAL_CELLS);
+  const [cells, setCells] = usePersistedWork('chemspace_notebook_cells', DEFAULT_INITIAL_CELLS);
   const [globalExecutionCount, setGlobalExecutionCount] = useState(1);
   const [kernelStatus, setKernelStatus] = useState('ready'); // 'ready' | 'busy'
   const [isExecutingAll, setIsExecutingAll] = useState(false);

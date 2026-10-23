@@ -1,6 +1,24 @@
 {
   "version": 1,
   "skills": {
+    "boltz2-nim": {
+      "source": "NVIDIA-BioNeMo/bionemo-agent-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/bionemo-agent-toolkit/skills/boltz2-nim/SKILL.md",
+      "computedHash": "b5dcf230f056180da7072cb36ca896f5d89b556b3d7ca0c53875fd5cd891b40d"
+    },
+    "diffdock-nim": {
+      "source": "NVIDIA-BioNeMo/bionemo-agent-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/bionemo-agent-toolkit/skills/diffdock-nim/SKILL.md",
+      "computedHash": "82a3aecc358b814d6b5f54e5bf1d9f3eb3d1c131e500c34624d7123b3f0fec6b"
+    },
+    "drug-discovery-pipeline": {
+      "source": "NVIDIA-BioNeMo/bionemo-agent-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/bionemo-agent-toolkit/skills/drug-discovery-pipeline/SKILL.md",
+      "computedHash": "af85000e1734860d13c92133beb35041ddaf0545eb16e4246defab92bcc7e8a4"
+    },
     "extension-to-functions-codebase": {
       "source": "firebase/agent-skills",
       "sourceType": "github",
@@ -66,6 +84,18 @@
       "sourceType": "github",
       "skillPath": "skills/firebase-security-rules-auditor/SKILL.md",
       "computedHash": "be877f6c7aaf460791dd6103a08906734036c26bd7c686cfdb8b60e4b2f65742"
+    },
+    "genmol-nim": {
+      "source": "NVIDIA-BioNeMo/bionemo-agent-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/bionemo-agent-toolkit/skills/genmol-nim/SKILL.md",
+      "computedHash": "fab65a2bbcac9db5c994590c6b6ae4cee47cc60287c6de1aa174e799cf5c7845"
+    },
+    "molmim-nim": {
+      "source": "NVIDIA-BioNeMo/bionemo-agent-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/bionemo-agent-toolkit/skills/molmim-nim/SKILL.md",
+      "computedHash": "e7e9e6c3f70d1762f10084c7d689735a3f5697d726b4c29928bd50a2a9031378"
     },
     "xcode-project-setup": {
       "source": "firebase/agent-skills",

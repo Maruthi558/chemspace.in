@@ -49,16 +49,17 @@ import { SkeletonTable } from '../components/loading/SkeletonLoader';
 import ScientistReviewsGlowSection from '../components/workspace/ScientistReviewsGlowSection';
 import ChevronsUpDownIcon from '../components/ui/ChevronsUpDownIcon';
 import WorkspaceAICopilot from '../components/workspace/WorkspaceAICopilot';
+import { usePersistedWork } from '../services/workPersistence';
 
 export default function UserWorkspace() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
 
-  const [activeTab, setActiveTab] = useState('history'); // 'history' | 'downloads' | 'ai'
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeTab, setActiveTab] = usePersistedWork('chemspace_user_workspace_tab', 'history'); // 'history' | 'downloads' | 'ai'
+  const [activeCategory, setActiveCategory] = usePersistedWork('chemspace_user_workspace_cat', 'all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState('newest');
+  const [sortOrder, setSortOrder] = usePersistedWork('chemspace_user_workspace_sort', 'newest');
   const [historyItems, setHistoryItems] = useState([]);
   const [downloads, setDownloads] = useState([]);
   const [recentlyUsed, setRecentlyUsed] = useState([]);

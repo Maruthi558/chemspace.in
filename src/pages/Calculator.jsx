@@ -2,19 +2,11 @@ import React, { useState } from 'react';
 import { Calculator as CalcIcon, Atom, Sparkles, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { estimateMass } from '../services/api';
 import ButtonSpinner from '../components/common/ButtonSpinner';
-
-const FORMULA_PRESETS = [
-  { formula: 'H2O', name: 'Water', note: '18.015 g/mol' },
-  { formula: 'C6H12O6', name: 'D-Glucose', note: '180.156 g/mol' },
-  { formula: 'C9H8O4', name: 'Aspirin', note: '180.158 g/mol' },
-  { formula: 'C8H10N4O2', name: 'Caffeine', note: '194.19 g/mol' },
-  { formula: 'C27H46O', name: 'Cholesterol', note: '386.65 g/mol' },
-  { formula: 'C20H14O4', name: 'Phenolphthalein', note: '318.32 g/mol' }
-];
+import { usePersistedWork } from '../services/workPersistence';
 
 export default function Calculator() {
-  const [formula, setFormula] = useState('');
-  const [result, setResult] = useState(null);
+  const [formula, setFormula] = usePersistedWork('chemspace_calc_formula', '');
+  const [result, setResult] = usePersistedWork('chemspace_calc_result', null);
   const [error, setError] = useState('');
   const [isCalculating, setIsCalculating] = useState(false);
 
@@ -112,31 +104,6 @@ export default function Calculator() {
             {!isCalculating && <ArrowRight className="w-3.5 h-3.5 text-white/80 arrow-micro" />}
           </button>
         </form>
-
-        {/* Preset Pills */}
-        <div className="space-y-2 pt-1">
-          <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider block">
-            Common Reagent Presets:
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {FORMULA_PRESETS.map((p) => (
-              <button
-                key={p.formula}
-                type="button"
-                onClick={() => {
-                  setFormula(p.formula);
-                  handleCalculate(p.formula);
-                }}
-                className="px-3 py-1.5 rounded-xl inner-box hover:border-orange-500/50 text-xs font-mono transition-all flex items-center gap-2 group cursor-pointer shadow-xs"
-              >
-                <span className="font-bold text-[var(--text-primary)] group-hover:text-orange-500 transition">
-                  {p.formula}
-                </span>
-                <span className="text-[10px] text-[var(--text-muted)]">({p.name})</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Error Alert */}
         {error && (

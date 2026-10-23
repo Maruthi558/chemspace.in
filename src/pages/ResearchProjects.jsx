@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FolderGit2, Plus, ArrowRight, Database, Cpu, Box, Check, FileText, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { usePersistedWork } from '../services/workPersistence';
 
 const INITIAL_PROJECTS = [
   {
@@ -25,7 +26,7 @@ const INITIAL_PROJECTS = [
 
 export default function ResearchProjects() {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState(INITIAL_PROJECTS);
+  const [projects, setProjects] = usePersistedWork('chemspace_research_projects', INITIAL_PROJECTS);
   const [showNewModal, setShowNewModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');

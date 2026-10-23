@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Activity,
   Play,
@@ -46,35 +46,49 @@ import ThreeMoleculeViewer from '../ThreeMoleculeViewer';
 import { logActivity } from '../../services/activityStore';
 import { useTheme } from '../../context/ThemeContext';
 import ButtonSpinner from '../common/ButtonSpinner';
+import { usePersistedWork, loadPersistedWork } from '../../services/workPersistence';
 
 export default function IbmRxnUnifiedStudio() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
+  const [searchParams] = useSearchParams();
+  const initialTarget = searchParams.get('target') || searchParams.get('smiles');
+
   // 1. Studio Workspace Mode ('forward' | 'retrosynthesis' | 'drawer' | 'planner' | 'mechanism')
-  const [studioMode, setStudioMode] = useState('forward');
+  const [studioMode, setStudioMode] = usePersistedWork('chemspace_ibmrxn_mode', initialTarget ? 'retrosynthesis' : 'forward');
 
   // Mechanism Workspace context — carries reaction data from other modes
   const [mechanismReactionContext, setMechanismReactionContext] = useState(null);
 
-  // 2. Forward Prediction State
-  const [reactantsList, setReactantsList] = useState([
+  // 2. Forward Prediction State with persistent memory
+  const DEFAULT_REACTANTS = [
     { id: 1, name: 'Salicylic Acid', smiles: 'O=C(O)c1ccccc1O' },
     { id: 2, name: 'Acetic Anhydride', smiles: 'CC(=O)OC(=O)C' }
-  ]);
-  const [reagentsInput, setReagentsInput] = useState('H2SO4 (conc.)');
-  const [catalystsInput, setCatalystsInput] = useState('Sulfuric Acid');
-  const [solventInput, setSolventInput] = useState('Ethyl Acetate');
-  const [temperatureInput, setTemperatureInput] = useState('85 °C');
+  ];
+  const [reactantsList, setReactantsList] = usePersistedWork('chemspace_ibmrxn_reactants', DEFAULT_REACTANTS);
+  const [reagentsInput, setReagentsInput] = usePersistedWork('chemspace_ibmrxn_reagents', 'H2SO4 (conc.)');
+  const [catalystsInput, setCatalystsInput] = usePersistedWork('chemspace_ibmrxn_catalysts', 'Sulfuric Acid');
+  const [solventInput, setSolventInput] = usePersistedWork('chemspace_ibmrxn_solvent', 'Ethyl Acetate');
+  const [temperatureInput, setTemperatureInput] = usePersistedWork('chemspace_ibmrxn_temperature', '85 °C');
   const [isPredicting, setIsPredicting] = useState(false);
   const [forwardPredictionResult, setForwardPredictionResult] = useState(null);
   const [predictionError, setPredictionError] = useState(null);
   const [isReagentModalOpen, setIsReagentModalOpen] = useState(false);
   const [canvasInitialSmiles, setCanvasInitialSmiles] = useState('O=C(O)c1ccccc1O');
 
-  // 3. Retrosynthesis State
-  const [targetSmilesInput, setTargetSmilesInput] = useState('CC(=O)Oc1ccccc1C(=O)O');
+  // 3. Retrosynthesis State with persistent memory
+  const [targetSmilesInput, setTargetSmilesInput] = usePersistedWork(
+    'chemspace_ibmrxn_target_smiles',
+    initialTarget || 'CC(=O)Oc1ccccc1C(=O)O'
+  );
+  useEffect(() => {
+    if (initialTarget && initialTarget !== targetSmilesInput) {
+      setTargetSmilesInput(initialTarget);
+      setStudioMode('retrosynthesis');
+    }
+  }, [initialTarget]);
   const [isRetrosynthesizing, setIsRetrosynthesizing] = useState(false);
   const [retrosynthesisResult, setRetrosynthesisResult] = useState(null);
   const [selectedStepModal, setSelectedStepModal] = useState(null);

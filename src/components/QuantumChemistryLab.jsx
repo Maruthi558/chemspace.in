@@ -41,12 +41,13 @@ import QuantumMonitor from './QuantumChemistry/QuantumMonitor';
 import QuantumResultDashboard from './QuantumChemistry/QuantumResultDashboard';
 import PESScanWorkspace from './QuantumChemistry/PESScanWorkspace';
 import QuantumAIAssistant from './QuantumChemistry/QuantumAIAssistant';
+import { usePersistedWork } from '../services/workPersistence';
 
 export default function QuantumChemistryLab() {
-  const [activeTab, setActiveTab] = useState('setup'); // 'setup', 'monitor', 'results', 'pes', 'assistant'
+  const [activeTab, setActiveTab] = usePersistedWork('chemspace_quantum_tab', 'setup');
 
-  // Molecular Hamiltonian & Job Configuration (No default sample molecule)
-  const [config, setConfig] = useState({
+  // Molecular Hamiltonian & Job Configuration with persistent state
+  const [config, setConfig] = usePersistedWork('chemspace_quantum_config', {
     smiles: '',
     formula: '',
     geometry_atoms: [],
@@ -61,12 +62,12 @@ export default function QuantumChemistryLab() {
   });
 
   // SMILES Bar state & Validation
-  const [smilesInput, setSmilesInput] = useState('');
+  const [smilesInput, setSmilesInput] = usePersistedWork('chemspace_quantum_smiles', '');
   const [validationError, setValidationError] = useState(null);
 
   // Execution & Results State
   const [isCalculating, setIsCalculating] = useState(false);
-  const [calculationResult, setCalculationResult] = useState(null);
+  const [calculationResult, setCalculationResult] = usePersistedWork('chemspace_quantum_result', null);
   const [showInputPreview, setShowInputPreview] = useState(false);
   const [showOutputParserModal, setShowOutputParserModal] = useState(false);
   const [inputContent, setInputContent] = useState('');

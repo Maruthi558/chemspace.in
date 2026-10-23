@@ -65,6 +65,7 @@ const NAV_GROUPS = [
   {
     title: 'Computation',
     items: [
+      { to: '/ai-automation', label: 'AI Automation Central', icon: Bot, badge: 'Agentic', formula: 'LITEFOLD // 3D' },
       { to: '/quantum-library', label: 'Quantum DFT', icon: Zap, badge: 'DFT', formula: 'ΔE (HOMO-LUMO)' },
       { to: '/ibm-rxn', label: 'IBM RXN', icon: Activity, badge: 'Synth', formula: 'R-COOH + R\'-OH' },
     ]
@@ -196,6 +197,8 @@ export default function Layout() {
       navigate('/periodic-table');
     } else if (query.includes('scientist') || query.includes('nobel') || query.includes('pioneer')) {
       navigate('/scientists');
+    } else if (query.includes('automation') || query.includes('workflow') || query.includes('screening')) {
+      navigate('/ai-automation');
     } else if (query.includes('workspace') || query.includes('file') || query.includes('history') || query.includes('saved')) {
       navigate('/workspace');
     } else if (query.includes('chromatograph') || query.includes('hplc')) {
@@ -231,6 +234,16 @@ export default function Layout() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/ai-automation')}
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-cyan-400 border border-cyan-500/40 bg-cyan-500/15 hover:bg-cyan-500/25 transition cursor-pointer relative"
+            aria-label="Open AI Automation Central"
+            title="Open AI Automation Central (LiteFold + Nomosis 3D)"
+          >
+            <Bot className="w-4 h-4" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full border-2 border-[var(--bg-header)] animate-pulse" />
+          </button>
+
           <button
             onClick={() => setAiModalOpen(true)}
             className="w-9 h-9 rounded-lg flex items-center justify-center text-orange-400 border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 transition cursor-pointer"
@@ -326,6 +339,18 @@ export default function Layout() {
 
             {/* Bottom tools & User profile */}
             <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
+              <button
+                onClick={() => { setMobileMenuOpen(false); navigate('/ai-automation'); }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-mono border border-cyan-500/40 bg-gradient-to-r from-cyan-500/20 via-sky-500/15 to-teal-500/20 text-cyan-300 font-bold hover:bg-cyan-500/30 transition cursor-pointer shadow-xs"
+                title="Open AI Automation Central"
+              >
+                <Bot className="w-4 h-4 text-cyan-400" />
+                <span>AI Automation Central</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-400/25 text-cyan-200 border border-cyan-400/30 font-semibold">
+                  AGENTIC
+                </span>
+              </button>
+
               <button
                 onClick={() => { setMobileMenuOpen(false); navigate('/rdkit-lab'); }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-mono border border-emerald-500/25 bg-emerald-500/10 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition cursor-pointer"
@@ -580,6 +605,23 @@ export default function Layout() {
             >
               <Hand className="w-3.5 h-3.5" />
               <span>Vision Controls</span>
+            </button>
+
+            {/* Special Flagship Button: AI Automation Central */}
+            <button
+              onClick={() => navigate('/ai-automation')}
+              className="px-3.5 py-1.5 rounded-lg border border-cyan-500/50 bg-gradient-to-r from-cyan-500/20 via-sky-500/15 to-teal-500/20 hover:from-cyan-500/30 hover:to-teal-500/30 text-[11px] font-mono font-bold text-cyan-300 hover:text-white transition flex items-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.2)] hover:shadow-[0_0_20px_rgba(6,182,212,0.35)] active:scale-95 group"
+              title="Open AI Automation Central (LiteFold Agentic Engine & Nomosis 3D Studio)"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+              </span>
+              <Bot className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-12 transition-transform" />
+              <span className="tracking-wide">AI Automation Central</span>
+              <span className="px-1.5 py-0.2 rounded text-[9px] bg-cyan-400/20 text-cyan-300 border border-cyan-400/30 font-semibold tracking-wider">
+                AGENTIC
+              </span>
             </button>
 
             <button

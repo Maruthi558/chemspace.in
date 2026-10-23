@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { aiCopilot } from '../../services/aiCopilotService';
 import { useTheme } from '../../context/ThemeContext';
+import { usePersistedWork } from '../../services/workPersistence';
 import ChatMessage from './ChatMessage';
 import VoiceVisualizer from './VoiceVisualizer';
 import CircularVoiceButton from './CircularVoiceButton';
@@ -31,6 +32,7 @@ const INITIAL_WELCOME_MESSAGE = {
   timestamp: new Date().toISOString()
 };
 
+// Exactly 2 curated suggestion prompts to prevent visual clutter
 const CHEMSPACE_SUGGESTION_PROMPTS = [
   {
     icon: FlaskConical,
@@ -39,22 +41,10 @@ const CHEMSPACE_SUGGESTION_PROMPTS = [
     prompt: 'Show the retrosynthetic reaction pathway for Aspirin, including reagents, catalysts, and conditions.'
   },
   {
-    icon: Atom,
-    title: 'Molecular Descriptors',
-    desc: 'Calculate formula & properties for C8H10N4O2',
-    prompt: 'What is the molecular weight, canonical SMILES, and physicochemical properties of Caffeine (C8H10N4O2)?'
-  },
-  {
     icon: Layers,
     title: 'Reaction Mechanisms',
     desc: 'Compare SN1 vs SN2 substitution',
     prompt: 'Explain the difference between SN1 and SN2 reaction mechanisms with transition states and stereochemistry.'
-  },
-  {
-    icon: Radio,
-    title: 'Spectra Interpretation',
-    desc: 'FTIR vibrational peaks & NMR shifts',
-    prompt: 'Predict the characteristic FTIR vibrational peaks and 1H NMR chemical shifts for Aspirin ester bond.'
   }
 ];
 
@@ -62,8 +52,8 @@ export default function CopilotWindow({ isOpen = true, onClose, onOpen }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [query, setQuery] = useState('');
-  const [messages, setMessages] = useState([INITIAL_WELCOME_MESSAGE]);
+  const [query, setQuery] = usePersistedWork('chemspace_copilot_draft_query', '');
+  const [messages, setMessages] = usePersistedWork('chemspace_copilot_messages', [INITIAL_WELCOME_MESSAGE]);
 
   // Window Display States
   const [isMinimized, setIsMinimized] = useState(false);

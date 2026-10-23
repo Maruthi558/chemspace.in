@@ -366,6 +366,68 @@ MIGRATIONS = [
             """,
             "CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_history(user_id, created_at DESC);"
         ]
+    },
+    {
+        "version": 2,
+        "name": "002_scientific_research_jobs_schema",
+        "mysql_sql": [
+            """
+            CREATE TABLE IF NOT EXISTS scientific_research_jobs (
+                id VARCHAR(64) PRIMARY KEY,
+                user_id INT NULL,
+                objective TEXT NOT NULL,
+                smiles VARCHAR(1000) NOT NULL,
+                target_pdb_id VARCHAR(32) NOT NULL,
+                status VARCHAR(32) DEFAULT 'Draft',
+                results_json LONGTEXT NULL,
+                report_markdown LONGTEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_research_status (status),
+                INDEX idx_research_pdb (target_pdb_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS scientific_structure_files (
+                id VARCHAR(64) PRIMARY KEY,
+                job_id VARCHAR(64) NOT NULL,
+                file_type VARCHAR(32) NOT NULL,
+                storage_path VARCHAR(500) NOT NULL,
+                file_size BIGINT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_struct_job (job_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            """
+        ],
+        "sqlite_sql": [
+            """
+            CREATE TABLE IF NOT EXISTS scientific_research_jobs (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER,
+                objective TEXT NOT NULL,
+                smiles TEXT NOT NULL,
+                target_pdb_id TEXT NOT NULL,
+                status TEXT DEFAULT 'Draft',
+                results_json TEXT,
+                report_markdown TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_research_status ON scientific_research_jobs(status);",
+            "CREATE INDEX IF NOT EXISTS idx_research_pdb ON scientific_research_jobs(target_pdb_id);",
+            """
+            CREATE TABLE IF NOT EXISTS scientific_structure_files (
+                id TEXT PRIMARY KEY,
+                job_id TEXT NOT NULL,
+                file_type TEXT NOT NULL,
+                storage_path TEXT NOT NULL,
+                file_size INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_struct_job ON scientific_structure_files(job_id);"
+        ]
     }
 ]
 
@@ -423,6 +485,13 @@ def run_migrations():
                         logger.info("[Database Migrations] Upgrading legacy users table to users_legacy_backup...")
                         cur.execute("ALTER TABLE users RENAME TO users_legacy_backup")
                         conn.commit()
+
+                    cur.execute("PRAGMA table_info(user_preferences)")
+                    pref_cols = [r["name"] for r in cur.fetchall()]
+                    if pref_cols and "user_id" not in pref_cols:
+                        logger.info("[Database Migrations] Adding user_id column to legacy user_preferences...")
+                        cur.execute("ALTER TABLE user_preferences ADD COLUMN user_id INTEGER")
+                        conn.commit()
                 else:
                     cur.execute("SHOW TABLES LIKE 'users'")
                     if cur.fetchone():
@@ -430,6 +499,14 @@ def run_migrations():
                         if not cur.fetchone():
                             logger.info("[Database Migrations] Upgrading legacy MySQL users table...")
                             cur.execute("RENAME TABLE users TO users_legacy_backup")
+                            conn.commit()
+
+                    cur.execute("SHOW TABLES LIKE 'user_preferences'")
+                    if cur.fetchone():
+                        cur.execute("SHOW COLUMNS FROM user_preferences LIKE 'user_id'")
+                        if not cur.fetchone():
+                            logger.info("[Database Migrations] Adding user_id column to MySQL user_preferences...")
+                            cur.execute("ALTER TABLE user_preferences ADD COLUMN user_id INT NULL")
                             conn.commit()
             except Exception as leg_err:
                 logger.warning(f"[Database Migrations] Legacy table check note: {leg_err}")

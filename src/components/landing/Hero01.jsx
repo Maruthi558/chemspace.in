@@ -9,6 +9,7 @@ import {
   Activity,
   Grid,
   Sparkles,
+  Bot,
   Sun,
   Moon,
   FolderLock,
@@ -66,7 +67,14 @@ export function Hero01({ className = "" }) {
           </div>
 
           {/* Core Lab Route Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-mono">
+          <nav className="hidden md:flex items-center gap-5 text-xs font-mono">
+            <button
+              onClick={() => navigate("/ai-automation")}
+              className="text-cyan-400 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1.5 font-bold"
+            >
+              <Bot className="w-3.5 h-3.5 text-cyan-400" />
+              <span>AI Automation Central</span>
+            </button>
             <button
               onClick={() => navigate("/chemdraw")}
               className="text-[var(--text-secondary)] hover:text-orange-500 transition cursor-pointer flex items-center gap-1.5"
@@ -106,6 +114,16 @@ export function Hero01({ className = "" }) {
 
           {/* Header Actions */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/ai-automation")}
+              className="hidden sm:flex px-2.5 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-xs font-mono font-bold text-cyan-400 hover:text-cyan-300 transition cursor-pointer items-center gap-1.5 shadow-xs"
+              title="Open AI Automation Central"
+            >
+              <Bot className="w-3.5 h-3.5 text-cyan-400" />
+              <span>AI Automation</span>
+              <span className="text-[9px] px-1 rounded bg-cyan-400/20 text-cyan-300">NEW</span>
+            </button>
+
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('chemspace-open-copilot'))}
               className="px-3 py-1.5 rounded-xl border border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 text-xs font-mono font-bold text-orange-400 hover:text-orange-300 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
@@ -383,6 +401,22 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
       {/* Main Action Buttons */}
       <div className="mb-6 flex flex-wrap items-center gap-3 sm:mb-8">
         <Button
+          onClick={() => navigate("/ai-automation")}
+          className="bg-gradient-to-r from-cyan-500 via-sky-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white font-extrabold border border-cyan-300/40 px-6 sm:px-7 py-3 rounded-xl shadow-lg shadow-cyan-500/30 cursor-pointer text-sm flex items-center gap-2 active:scale-95 transition relative overflow-hidden group"
+          size="lg"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+          </span>
+          <Bot className="w-4 h-4 text-cyan-100 group-hover:rotate-12 transition-transform" />
+          <span>AI Automation Central</span>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white font-semibold">
+            LITEFOLD + 3D
+          </span>
+        </Button>
+
+        <Button
           onClick={() => navigate("/chemdraw")}
           className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold border-none px-6 sm:px-7 py-3 rounded-xl shadow-lg shadow-orange-500/25 cursor-pointer text-sm flex items-center gap-2 active:scale-95 transition"
           size="lg"
@@ -418,8 +452,9 @@ function MainContent({ className, onPronounce, isPlayingAudio }) {
       {/* Core Scientific Technology Engine Strip */}
       <div className="relative -ml-4 lg:ml-0 pt-2 border-t border-[var(--border-subtle)]">
         <div className="no-scrollbar flex items-center gap-6 overflow-x-auto px-4 lg:px-0 py-1">
+          <TechItem icon={<Bot className="w-4 h-4 text-cyan-400" />} title="LiteFold DAG Agent" />
+          <TechItem icon={<Box className="w-4 h-4 text-sky-400" />} title="Nomosis 3D Studio" />
           <TechItem icon={<Cpu className="w-4 h-4 text-emerald-500" />} title="RDKit WASM" />
-          <TechItem icon={<Box className="w-4 h-4 text-sky-500" />} title="Three.js 3D" />
           <TechItem icon={<Zap className="w-4 h-4 text-violet-500" />} title="DFT Quantum" />
           <TechItem icon={<Radio className="w-4 h-4 text-amber-500" />} title="FTIR • NMR" />
           <TechItem icon={<Activity className="w-4 h-4 text-rose-500" />} title="IBM RXN Synth" />

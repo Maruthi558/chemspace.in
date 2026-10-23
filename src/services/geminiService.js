@@ -6,13 +6,12 @@
 const DEFAULT_AI_KEY = '';
 
 export const AI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
-  'gemini-2.5-pro',
-  'gemini-3.5-flash',
+  'gemini-flash-latest',
   'gemini-3.1-flash-lite',
-  'gemini-flash-latest'
+  'gemini-3.8-flash',
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash'
 ];
 
 export const CHEMSPACE_SYSTEM_INSTRUCTION = `You are ChemSpace AI (DeepChem LLM), the proprietary, advanced scientific intelligence and molecular computation engine built for the ChemSpace laboratory platform.

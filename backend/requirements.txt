@@ -10,4 +10,7 @@ scipy
 matplotlib
 joblib
 pandas
+langgraph
+langchain-core
+
 

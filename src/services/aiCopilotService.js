@@ -89,6 +89,8 @@ class AICopilotService {
     this.speechSynth = typeof window !== 'undefined' ? window.speechSynthesis : null;
     this.voiceConfig = this.loadVoiceConfig();
     this.availableVoices = [];
+    this.speechQueue = [];
+    this.currentQueueIndex = 0;
 
     // Load available voices asynchronously
     if (this.speechSynth) {
@@ -212,7 +214,7 @@ class AICopilotService {
   }
 
   /**
-   * Real-time SSE streaming from backend
+   * Real-time streaming with zero-latency failover
    */
   async *streamResponse(query, context = {}, signal = null) {
     const sanitizedQuery = this.sanitizeVoiceTranscript(query);
@@ -221,97 +223,116 @@ class AICopilotService {
 
     let streamedSuccess = false;
 
-    try {
-      const response = await fetch(`${API_URL}/ai/chat/stream`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: sanitizedQuery,
-          systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
-          history: this.history.slice(-8),
-          context: {
-            ...context,
-            detectedLanguage: userLanguage,
-            currentPath: typeof window !== 'undefined' ? window.location.pathname : '/',
-            timestamp: new Date().toISOString()
-          },
-          language: userLanguage
-        }),
-        signal
-      });
+    // Detect if running on static hosting (GitHub Pages, Vercel, Netlify, Cloudflare)
+    const isStaticDeploy = typeof window !== 'undefined' && (
+      window.location.hostname.includes('github.io') ||
+      window.location.hostname.includes('pages.dev') ||
+      window.location.hostname.includes('vercel.app') ||
+      window.location.hostname.includes('netlify.app') ||
+      (!API_URL.startsWith('http') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    );
 
-      const contentType = response.headers.get('content-type') || '';
-      const isEventStream = response.ok && contentType.includes('text/event-stream');
+    // 1. If running locally with Python backend, try local streaming with tight 800ms connection timeout
+    if (!isStaticDeploy) {
+      try {
+        const timeoutController = new AbortController();
+        const timeoutId = setTimeout(() => timeoutController.abort(), 800);
+        if (signal) {
+          signal.addEventListener('abort', () => timeoutController.abort(), { once: true });
+        }
 
-      if (isEventStream && response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let accumulatedText = '';
-        let buffer = '';
-        let citations = [];
-        let metadata = {};
-        let tools = [];
-        let tool_used = false;
+        const response = await fetch(`${API_URL}/ai/chat/stream`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: sanitizedQuery,
+            systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
+            history: this.history.slice(-8),
+            context: {
+              ...context,
+              detectedLanguage: userLanguage,
+              currentPath: typeof window !== 'undefined' ? window.location.pathname : '/',
+              timestamp: new Date().toISOString()
+            },
+            language: userLanguage
+          }),
+          signal: timeoutController.signal
+        });
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done || (signal && signal.aborted)) break;
+        clearTimeout(timeoutId);
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
+        const contentType = response.headers.get('content-type') || '';
+        const isEventStream = response.ok && contentType.includes('text/event-stream');
 
-          for (const line of lines) {
-            const clean = line.trim();
-            if (clean.startsWith('data: ')) {
-              const dataStr = clean.slice(6);
-              if (dataStr === '[DONE]') break;
-              try {
-                const parsed = jsonParseSafe(dataStr);
-                if (parsed?.type === 'metadata' || parsed?.type === 'done') {
-                  if (parsed.citations) citations = parsed.citations;
-                  if (parsed.metadata) metadata = parsed.metadata;
-                  if (parsed.tools) tools = parsed.tools;
-                  if (parsed.tool_used !== undefined) tool_used = parsed.tool_used;
-                }
-                if (parsed?.type === 'delta' && parsed.content) {
-                  accumulatedText += parsed.content;
-                  streamedSuccess = true;
-                  yield {
-                    text: accumulatedText,
-                    delta: parsed.content,
-                    isDone: false,
-                    citations,
-                    metadata,
-                    tools,
-                    tool_used
-                  };
-                }
-              } catch (e) {}
+        if (isEventStream && response.body) {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let accumulatedText = '';
+          let buffer = '';
+          let citations = [];
+          let metadata = {};
+          let tools = [];
+          let tool_used = false;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done || (signal && signal.aborted)) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              const clean = line.trim();
+              if (clean.startsWith('data: ')) {
+                const dataStr = clean.slice(6);
+                if (dataStr === '[DONE]') break;
+                try {
+                  const parsed = jsonParseSafe(dataStr);
+                  if (parsed?.type === 'metadata' || parsed?.type === 'done') {
+                    if (parsed.citations) citations = parsed.citations;
+                    if (parsed.metadata) metadata = parsed.metadata;
+                    if (parsed.tools) tools = parsed.tools;
+                    if (parsed.tool_used !== undefined) tool_used = parsed.tool_used;
+                  }
+                  if (parsed?.type === 'delta' && parsed.content) {
+                    accumulatedText += parsed.content;
+                    streamedSuccess = true;
+                    yield {
+                      text: accumulatedText,
+                      delta: parsed.content,
+                      isDone: false,
+                      citations,
+                      metadata,
+                      tools,
+                      tool_used
+                    };
+                  }
+                } catch (e) {}
+              }
             }
           }
-        }
 
-        if (accumulatedText) {
-          this.history.push({ role: 'user', content: sanitizedQuery });
-          this.history.push({
-            role: 'assistant',
-            content: accumulatedText,
-            citations,
-            metadata,
-            tools,
-            tool_used
-          });
-          yield { text: accumulatedText, isDone: true, citations, metadata, tools, tool_used };
-          return;
+          if (accumulatedText) {
+            this.history.push({ role: 'user', content: sanitizedQuery });
+            this.history.push({
+              role: 'assistant',
+              content: accumulatedText,
+              citations,
+              metadata,
+              tools,
+              tool_used
+            });
+            yield { text: accumulatedText, isDone: true, citations, metadata, tools, tool_used };
+            return;
+          }
         }
+      } catch (err) {
+        if (signal && signal.aborted) throw err;
       }
-    } catch (err) {
-      if (err.name === 'AbortError') throw err;
-      console.warn('[AICopilotService] Backend stream unavailable, using Google AI Studio Gemini engine:', err.message);
     }
 
-    // Direct Real-Time Streaming via ChemSpace DeepChem LLM Engine
+    // 2. Direct Real-Time Streaming via ChemSpace DeepChem LLM Engine
     if (!streamedSuccess) {
       try {
         let accumulatedAiText = '';
@@ -346,12 +367,11 @@ class AICopilotService {
           return;
         }
       } catch (aiErr) {
-        if (aiErr.name === 'AbortError') throw aiErr;
-        console.warn('[AICopilotService] Direct ChemSpace LLM stream fallback, attempting single-shot:', aiErr.message);
+        if (signal && signal.aborted) throw aiErr;
       }
     }
 
-    // Direct Single-Shot Gemini Request if SSE stream was interrupted
+    // 3. Direct Single-Shot Gemini Request if SSE stream had an interruption
     if (!streamedSuccess) {
       try {
         const geminiRes = await callGeminiChat(sanitizedQuery, {
@@ -364,18 +384,20 @@ class AICopilotService {
           const fullText = geminiRes.responseText;
           const words = fullText.split(' ');
           let cur = '';
-          for (let i = 0; i < words.length; i++) {
+          for (let i = 0; i < words.length; i += 3) {
             if (signal && signal.aborted) break;
-            cur += (i === 0 ? '' : ' ') + words[i];
+            const chunk = words.slice(i, i + 3).join(' ');
+            const addition = (cur ? ' ' : '') + chunk;
+            cur += addition;
             yield {
               text: cur,
-              delta: (i === 0 ? '' : ' ') + words[i],
-              isDone: i === words.length - 1,
+              delta: addition,
+              isDone: i + 3 >= words.length,
               metadata: { provider: 'ChemSpace DeepChem LLM', model: 'DeepChem-3.8' },
               tools: ['ChemSpace DeepChem LLM'],
               tool_used: true
             };
-            await new Promise((r) => setTimeout(r, 10));
+            await new Promise((r) => setTimeout(r, 6));
           }
           this.history.push({ role: 'user', content: sanitizedQuery });
           this.history.push({
@@ -389,29 +411,32 @@ class AICopilotService {
         }
       } catch (singleShotErr) {
         if (singleShotErr.name === 'AbortError') throw singleShotErr;
-        console.warn('[AICopilotService] Single-shot Gemini error:', singleShotErr.message);
       }
     }
 
-    // Fallback: Use standard high-fidelity client reasoning engine if all external services fail
+    // 4. Fallback: Instant high-fidelity client reasoning engine
     if (!streamedSuccess) {
       const fallbackResult = await this.generateClientFallbackResponse(sanitizedQuery, context, langInfo);
       const words = (fallbackResult.responseText || '').split(' ');
       let cur = '';
-      for (let i = 0; i < words.length; i++) {
+      for (let i = 0; i < words.length; i += 3) {
         if (signal && signal.aborted) break;
-        cur += (i === 0 ? '' : ' ') + words[i];
+        const chunk = words.slice(i, i + 3).join(' ');
+        const addition = (cur ? ' ' : '') + chunk;
+        cur += addition;
         yield {
           text: cur,
-          delta: (i === 0 ? '' : ' ') + words[i],
-          isDone: i === words.length - 1,
+          delta: addition,
+          isDone: i + 3 >= words.length,
           metadata: { provider: 'ChemSpace Offline Chemical Engine' },
           tools: ['Scientific ChemSpace Engine'],
           tool_used: true,
           moleculeCard: fallbackResult.moleculeCard
         };
-        await new Promise((r) => setTimeout(r, 16));
+        await new Promise((r) => setTimeout(r, 8));
       }
+      this.history.push({ role: 'user', content: sanitizedQuery });
+      this.history.push({ role: 'assistant', content: cur, metadata: { provider: 'ChemSpace Offline Chemical Engine' } });
     }
   }
 
@@ -423,6 +448,32 @@ class AICopilotService {
     const langInfo = detectLanguage(sanitizedQuery);
     const userLanguage = context.preferredLanguage || langInfo.code || 'en';
     const intent = this.detectIntent(sanitizedQuery);
+
+    const isStaticDeploy = typeof window !== 'undefined' && (
+      window.location.hostname.includes('github.io') ||
+      window.location.hostname.includes('pages.dev') ||
+      window.location.hostname.includes('vercel.app') ||
+      window.location.hostname.includes('netlify.app') ||
+      (!API_URL.startsWith('http') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    );
+
+    // If static hosting, directly query Gemini engine
+    if (isStaticDeploy) {
+      try {
+        const geminiRes = await callGeminiChat(sanitizedQuery, {
+          history: this.history,
+          systemPrompt: CHEMSPACE_AI_SYSTEM_PROMPT,
+          signal
+        });
+        if (geminiRes && geminiRes.responseText) {
+          this.history.push({ role: 'user', content: sanitizedQuery });
+          this.history.push({ role: 'assistant', content: geminiRes.responseText });
+          return geminiRes;
+        }
+      } catch (geminiError) {
+        if (geminiError.name === 'AbortError') throw geminiError;
+      }
+    }
 
     try {
       let response = await request('/ai/chat', {
@@ -710,7 +761,7 @@ class AICopilotService {
   }
 
   /**
-   * Resolves natural, smooth human voice. Avoids harsh robotic legacy voices.
+   * Resolves natural, smooth human voice. Prioritizes natural neural voices over robotic synthesizers.
    */
   resolveVoice(gender = 'female', langCode = 'en') {
     if (!this.speechSynth) return null;
@@ -733,33 +784,66 @@ class AICopilotService {
     }
 
     // C. Natural Neural Voices by Gender
-    const lowerGender = (gender || 'female').toLowerCase();
+    const lowerGender = (gender || this.voiceConfig.voiceGender || 'female').toLowerCase();
 
-    if (lowerGender === 'female') {
-      // Prioritize natural warm female voices
-      const femaleKeywords = [
-        'jenny', 'aria', 'samantha', 'victoria', 'google us english', 
-        'natural', 'online', 'female', 'zira'
-      ];
-      for (const kw of femaleKeywords) {
-        const match = voices.find((v) => v.name.toLowerCase().includes(kw));
-        if (match) return match;
+    // Score all available system voices for maximum naturalness
+    const scoredVoices = voices.map((v) => {
+      let score = 0;
+      const name = v.name.toLowerCase();
+      const lang = v.lang.toLowerCase();
+
+      // Check language match
+      if (lang.startsWith('en')) score += 100;
+      if (lang.startsWith('en-us')) score += 60;
+      if (lang.startsWith('en-gb')) score += 40;
+
+      // Natural/neural indicators (Edge Natural, Chrome Google, Apple Siri)
+      if (/natural|online|neural/i.test(name)) score += 400;
+      if (/google/i.test(name)) score += 250;
+
+      // Preferred premium voice models by gender
+      if (lowerGender === 'female') {
+        if (/jenny/i.test(name)) score += 600;
+        else if (/aria/i.test(name)) score += 580;
+        else if (/samantha/i.test(name)) score += 450;
+        else if (/victoria|karen|moira|sonia/i.test(name)) score += 350;
+        else if (/female/i.test(name)) score += 150;
+      } else {
+        if (/guy/i.test(name)) score += 600;
+        else if (/christopher/i.test(name)) score += 580;
+        else if (/daniel|alex|oliver|ryan/i.test(name)) score += 450;
+        else if (/male/i.test(name)) score += 150;
       }
-    } else if (lowerGender === 'male') {
-      // Prioritize natural male voices
-      const maleKeywords = [
-        'guy', 'daniel', 'alex', 'david', 'google uk english male', 
-        'natural', 'online', 'male'
-      ];
-      for (const kw of maleKeywords) {
-        const match = voices.find((v) => v.name.toLowerCase().includes(kw));
-        if (match) return match;
+
+      // Heavily penalize robotic legacy desktop synthesizers
+      if (/desktop|legacy|synthesizer|david|zira/i.test(name) && !/natural|online/i.test(name)) {
+        score -= 400;
+      }
+
+      return { voice: v, score };
+    });
+
+    scoredVoices.sort((a, b) => b.score - a.score);
+    return scoredVoices[0]?.voice || voices[0];
+  }
+
+  splitIntoSentences(text) {
+    if (!text) return [];
+    // Split on sentence terminals: . ! ? or double newlines, preserving reasonable phrasing
+    const raw = text.split(/(?<=[.!?])\s+|\n\n+/);
+    const cleaned = [];
+    for (const chunk of raw) {
+      const s = chunk.trim();
+      if (s.length > 0) {
+        if (s.length > 220) {
+          const sub = s.split(/(?<=[,;:])\s+/);
+          cleaned.push(...sub.map((x) => x.trim()).filter(Boolean));
+        } else {
+          cleaned.push(s);
+        }
       }
     }
-
-    // Default natural fallback
-    const naturalVoice = voices.find((v) => /natural|online|google/i.test(v.name) && v.lang.startsWith('en'));
-    return naturalVoice || voices[0];
+    return cleaned;
   }
 
   prepareTextForSpeech(text) {
@@ -800,73 +884,124 @@ class AICopilotService {
       .trim();
   }
 
+  /**
+   * Fluid sentence-by-sentence natural speech synthesis
+   * Prevents Chrome speech drop-outs and delivers lifelike conversational pacing.
+   */
   speak(text, onStart = null, onEnd = null, onError = null, preferredLang = 'en') {
     if (!this.speechSynth || !text) return;
-    this.speechSynth.cancel();
+    this.stopSpeaking();
 
     const cleanText = this.prepareTextForSpeech(text);
     if (!cleanText) return;
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-
-    // Natural rate (not fast or shrill)
-    let rate = 1.0;
-    if (this.voiceConfig.speechSpeed === 'slow') rate = 0.85;
-    else if (this.voiceConfig.speechSpeed === 'fast') rate = 1.20;
-    utterance.rate = rate;
-
-    // Natural pitch
-    utterance.pitch = 1.0;
-    utterance.volume = typeof this.voiceConfig.volume === 'number' ? this.voiceConfig.volume : 1.0;
+    const sentences = this.splitIntoSentences(cleanText);
+    if (!sentences.length) return;
 
     const hasTelugu = /[\u0C00-\u0C7F]/.test(text) || preferredLang === 'te';
     const effectiveLang = hasTelugu ? 'te' : (preferredLang || 'en');
-
     const selectedVoice = this.resolveVoice(this.voiceConfig.voiceGender, effectiveLang);
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-      utterance.lang = selectedVoice.lang;
-    } else if (hasTelugu) {
-      utterance.lang = 'te-IN';
-    } else {
-      utterance.lang = 'en-US';
-    }
 
-    utterance.onstart = () => {
-      this.isSpeaking = true;
-      if (onStart) onStart();
+    // Natural human cadence
+    let rate = 0.98;
+    if (this.voiceConfig.speechSpeed === 'slow') rate = 0.85;
+    else if (this.voiceConfig.speechSpeed === 'fast') rate = 1.15;
+
+    const volume = typeof this.voiceConfig.volume === 'number' ? this.voiceConfig.volume : 1.0;
+
+    this.speechQueue = sentences;
+    this.currentQueueIndex = 0;
+    this.isSpeaking = true;
+
+    const speakNextSentence = () => {
+      if (!this.isSpeaking || this.currentQueueIndex >= this.speechQueue.length) {
+        this.isSpeaking = false;
+        if (onEnd) onEnd();
+        return;
+      }
+
+      const sentenceText = this.speechQueue[this.currentQueueIndex];
+      const utterance = new SpeechSynthesisUtterance(sentenceText);
+      utterance.rate = rate;
+      utterance.pitch = 1.01;
+      utterance.volume = volume;
+
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+        utterance.lang = selectedVoice.lang;
+      } else if (hasTelugu) {
+        utterance.lang = 'te-IN';
+      } else {
+        utterance.lang = 'en-US';
+      }
+
+      utterance.onstart = () => {
+        if (this.currentQueueIndex === 0 && onStart) {
+          onStart();
+        }
+      };
+
+      utterance.onend = () => {
+        this.currentQueueIndex++;
+        if (this.currentQueueIndex < this.speechQueue.length && this.isSpeaking) {
+          // Brief conversational breath pause between sentences
+          setTimeout(speakNextSentence, 60);
+        } else {
+          this.isSpeaking = false;
+          if (onEnd) onEnd();
+        }
+      };
+
+      utterance.onerror = (err) => {
+        this.isSpeaking = false;
+        if (onError) onError(err);
+      };
+
+      try {
+        this.speechSynth.speak(utterance);
+      } catch (e) {
+        this.isSpeaking = false;
+        if (onError) onError(e);
+      }
     };
 
-    utterance.onend = () => {
-      this.isSpeaking = false;
-      if (onEnd) onEnd();
-    };
-
-    utterance.onerror = (err) => {
-      this.isSpeaking = false;
-      if (onError) onError(err);
-    };
-
-    this.speechSynth.speak(utterance);
+    speakNextSentence();
   }
 
   stopSpeaking() {
+    this.speechQueue = [];
+    this.currentQueueIndex = 0;
+    this.isSpeaking = false;
     if (this.speechSynth) {
-      this.speechSynth.cancel();
-      this.isSpeaking = false;
+      try {
+        this.speechSynth.cancel();
+      } catch (e) {}
     }
   }
 
   startListening(onInterimResult, onFinalResult, onError, onEnd, preferredLang = 'auto') {
-    if (!this.recognition) {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
       if (onError) onError('Speech Recognition is not supported in this browser. Please use text input.');
       return;
     }
 
     this.stopSpeaking();
-    this.isListening = true;
+    this.stopListening();
 
-    this.recognition.lang = 'en-US';
+    try {
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
+      this.recognition.lang = 'en-US';
+      this.recognition.maxAlternatives = 1;
+    } catch (err) {
+      if (onError) onError(err.message);
+      return;
+    }
+
+    this.isListening = true;
 
     this.recognition.onresult = (event) => {
       let interim = '';
@@ -893,6 +1028,7 @@ class AICopilotService {
     };
 
     this.recognition.onerror = (event) => {
+      if (event.error === 'no-speech') return;
       this.isListening = false;
       if (typeof onError === 'function') onError(event.error);
     };
@@ -904,16 +1040,20 @@ class AICopilotService {
 
     try {
       this.recognition.start();
-    } catch (e) {}
+    } catch (e) {
+      this.isListening = false;
+      if (onError) onError(e.message);
+    }
   }
 
   stopListening() {
     if (this.recognition) {
       try {
-        this.recognition.stop();
+        this.recognition.abort();
       } catch (e) {}
-      this.isListening = false;
+      this.recognition = null;
     }
+    this.isListening = false;
   }
 
   async translateQuery(text, targetLang = 'en') {

@@ -12,6 +12,9 @@ import asyncio
 import ast
 import traceback
 import base64
+import logging
+
+logger = logging.getLogger("chemspace.main")
 from typing import Annotated, Optional, List, Dict, Any
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
@@ -2828,7 +2831,777 @@ def query_pubchem(query: str):
         }
 
 
+
+# ============================================================================
+# AI AUTOMATION CENTER ENDPOINTS
+# ============================================================================
+
+try:
+    from backend.langgraph_engine import langgraph_orchestrator, ChemWorkflowState
+    from backend.adapters.scientific_registry import scientific_registry
+    from backend.adapters.bionemo_adapter import bionemo_adapter
+    from backend.automation_engine import WORKFLOW_TEMPLATES, ToolRegistry, automation_executor
+    LANGGRAPH_ENGINE_AVAILABLE = True
+except ImportError:
+    try:
+        from langgraph_engine import langgraph_orchestrator, ChemWorkflowState
+        from adapters.scientific_registry import scientific_registry
+        from adapters.bionemo_adapter import bionemo_adapter
+        from automation_engine import WORKFLOW_TEMPLATES, ToolRegistry, automation_executor
+        LANGGRAPH_ENGINE_AVAILABLE = True
+    except ImportError:
+        LANGGRAPH_ENGINE_AVAILABLE = False
+
+
+class AutomationPlanRequest(BaseModel):
+    prompt: str = Field(..., max_length=2000)
+    template_id: Optional[str] = None
+
+
+class AutomationExecuteRequest(BaseModel):
+    prompt: Optional[str] = Field(None, max_length=2000)
+    template_id: Optional[str] = None
+    job_id: Optional[str] = None
+
+
+class AutomationApproveRequest(BaseModel):
+    approved: bool = True
+
+
+@app.get("/api/automation/status")
+async def get_automation_status():
+    """Return status and readiness of LangGraph workflow engine, scientific tools, and adapters."""
+    try:
+        # Query unified scientific registry
+        tools = scientific_registry.get_all_capabilities()
+        bionemo_diag = bionemo_adapter.get_catalog_status()
+        
+        # Check if Google/Gemini environment variable is configured without leaking value
+        has_gemini = bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_AI_STUDIO_API_KEY"))
+
+        return {
+            "status": "ready",
+            "orchestrator": {
+                "name": "LangGraph Scientific Workflow Engine",
+                "framework": "LangGraph (StateGraph + MemorySaver Checkpointer)",
+                "state_persistence": "Thread-isolated Checkpointer",
+                "human_in_the_loop": True,
+                "streaming_supported": True
+            },
+            "tools": tools,
+            "bionemo_integrations": bionemo_diag,
+            "ai_planner": {
+                "configured": has_gemini,
+                "provider": "Scientific AI Workflow Planner"
+            },
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        logger.exception("Error checking automation status: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/automation/templates")
+async def get_automation_templates():
+    """Return available curated scientific workflow templates."""
+    return {
+        "templates": WORKFLOW_TEMPLATES
+    }
+
+
+@app.post("/api/automation/plan")
+async def create_automation_plan(req: AutomationPlanRequest):
+    """Interpret user request and return structured LangGraph workflow plan in Draft status."""
+    try:
+        if not req.prompt or not req.prompt.strip():
+            raise HTTPException(status_code=400, detail="Scientific request prompt cannot be empty.")
+        
+        # Create plan through LangGraph orchestrator
+        job = langgraph_orchestrator.create_job(req.prompt.strip(), req.template_id)
+        return {
+            "status": "success",
+            "job": job
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error generating plan: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to generate workflow plan: {str(e)}")
+
+
+@app.post("/api/automation/execute")
+async def execute_automation_workflow(req: AutomationExecuteRequest):
+    """Launch asynchronous execution of a planned LangGraph scientific workflow."""
+    try:
+        job = None
+        if req.job_id:
+            job = langgraph_orchestrator.get_job_dict(req.job_id)
+            if not job:
+                raise HTTPException(status_code=404, detail=f"Job '{req.job_id}' not found.")
+        elif req.prompt:
+            job = langgraph_orchestrator.create_job(req.prompt.strip(), req.template_id)
+        else:
+            raise HTTPException(status_code=400, detail="Either job_id or prompt must be supplied.")
+
+        job_id = job["id"]
+        # Trigger async LangGraph execution task in background without blocking
+        asyncio.create_task(langgraph_orchestrator.execute_job_async(job_id))
+
+        return {
+            "status": "success",
+            "message": "LangGraph workflow execution launched.",
+            "job": langgraph_orchestrator.get_job_dict(job_id)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error launching workflow execution: %s", e)
+        raise HTTPException(status_code=500, detail=f"Workflow execution failed to launch: {str(e)}")
+
+
+@app.get("/api/automation/jobs/{job_id}")
+async def get_automation_job(job_id: str):
+    """Poll job status, step timeline, 3D conformers, properties, and logs."""
+    job = langgraph_orchestrator.get_job_dict(job_id)
+    if not job or not job.get("id"):
+        # Check fallback
+        fallback = automation_executor.get_job(job_id)
+        if fallback:
+            return {"status": "success", "job": fallback.to_dict()}
+        raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found.")
+    return {
+        "status": "success",
+        "job": job
+    }
+
+
+@app.post("/api/automation/jobs/{job_id}/approve")
+async def approve_automation_job(job_id: str, req: AutomationApproveRequest):
+    """Register human approval or rejection for an interrupted LangGraph checkpoint."""
+    res = langgraph_orchestrator.approve_job(job_id, req.approved)
+    if not res:
+        raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found.")
+    
+    if req.approved:
+        # Resume execution
+        asyncio.create_task(langgraph_orchestrator.execute_job_async(job_id))
+
+    return {
+        "status": "success",
+        "message": f"Approval decision ({req.approved}) registered.",
+        "job": langgraph_orchestrator.get_job_dict(job_id)
+    }
+
+
+@app.post("/api/automation/jobs/{job_id}/cancel")
+async def cancel_automation_job(job_id: str):
+    """Request cooperative cancellation of a running LangGraph workflow."""
+    cancelled = langgraph_orchestrator.cancel_job(job_id)
+    if not cancelled:
+        cancelled = automation_executor.cancel_job(job_id)
+    if not cancelled:
+        raise HTTPException(status_code=400, detail="Job cannot be cancelled (either not found or already finished).")
+    return {
+        "status": "success",
+        "message": f"Job '{job_id}' cancelled successfully."
+    }
+
+
+@app.get("/api/automation/jobs/{job_id}/stream")
+async def stream_automation_job(job_id: str):
+    """Stream real-time job execution updates using Server-Sent Events (SSE)."""
+    from fastapi.responses import StreamingResponse
+
+    async def event_generator():
+        last_log_count = 0
+        for _ in range(60):
+            job = langgraph_orchestrator.get_job_dict(job_id)
+            if not job or not job.get("id"):
+                yield f"data: {json.dumps({'error': 'Job not found'})}\n\n"
+                break
+
+            data = {
+                "id": job["id"],
+                "status": job["status"],
+                "active_step_index": job.get("active_step_index", 0),
+                "steps": job.get("steps", []),
+                "logs": job.get("logs", [])[last_log_count:],
+                "three_d_conformers": job.get("three_d_conformers"),
+                "properties": job.get("properties"),
+                "requires_approval": job.get("requires_approval", False),
+                "approval_prompt": job.get("approval_prompt"),
+                "scientific_report": bool(job.get("scientific_report"))
+            }
+            last_log_count = len(job.get("logs", []))
+            yield f"data: {json.dumps(data)}\n\n"
+
+            if job["status"] in ["Completed", "Failed", "Cancelled", "AwaitingApproval"]:
+                break
+            await asyncio.sleep(0.8)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+class CompoundValidationRequest(BaseModel):
+    input: str
+
+
+class BatchProcessingRequest(BaseModel):
+    compounds: Optional[List[str]] = None
+    raw_text: Optional[str] = None
+    template_id: Optional[str] = None
+
+
+@app.post("/api/automation/validate-compound")
+async def validate_compound_endpoint(req: CompoundValidationRequest):
+    """Deep scientific validation, classification, repair suggestions, and tool compatibility matrix."""
+    from backend.universal_validator import universal_validate_molecule
+    try:
+        report = universal_validate_molecule(req.input)
+        return {
+            "status": "success",
+            "report": report.to_dict()
+        }
+    except Exception as e:
+        logger.exception("Error validating compound: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/automation/batch")
+async def execute_batch_endpoint(req: BatchProcessingRequest):
+    """Executes condition-aware batch processing across compounds with fault isolation."""
+    from backend.batch_engine import parse_batch_input, execute_batch_job
+    try:
+        items = []
+        if req.compounds:
+            items = req.compounds
+        elif req.raw_text:
+            items = parse_batch_input(req.raw_text)
+        else:
+            raise HTTPException(status_code=400, detail="Provide either compounds list or raw_text (SDF/multiline).")
+
+        if not items:
+            raise HTTPException(status_code=400, detail="No valid compound records detected in batch input.")
+
+        result = execute_batch_job(items, req.template_id)
+        return {
+            "status": "success",
+            "batch": result
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error executing batch: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# SCIENTIFIC RESEARCH & COMPUTATIONAL LAB CONTRACTS (PART 2 INTEGRATION)
+# ============================================================================
+
+from backend.services.molecular_service import molecular_service
+from backend.services.structure_service import structure_service
+from backend.services.docking_service import docking_service
+from backend.services.interaction_service import interaction_service
+from backend.services.admet_service import admet_service
+from backend.services.research_orchestrator import research_orchestrator
+from backend.services.tool_registry import tool_registry
+from backend.services.research_planner import research_planner
+from backend.services.agent_engine import agent_engine
+
+
+class MolecularPropertiesRequest(BaseModel):
+    smiles: str = Field(..., max_length=2000)
+
+
+class MolecularConformersRequest(BaseModel):
+    smiles: str = Field(..., max_length=2000)
+    num_conformers: int = 1
+
+
+class DockingJobRequest(BaseModel):
+    smiles: str = Field(..., max_length=2000)
+    target_pdb_id: str = Field("6LU7", max_length=10)
+    pocket_center: Optional[List[float]] = None
+    box_size: Optional[List[float]] = None
+    exhaustiveness: Optional[int] = 8
+    num_poses: Optional[int] = 3
+
+
+class AdvancedDockingRequest(BaseModel):
+    smiles: Optional[str] = Field(None, max_length=2000)
+    ligand_content: Optional[str] = Field(None, max_length=5000000)
+    target_pdb_id: str = Field("6LU7", max_length=10)
+    receptor_pdb_content: Optional[str] = Field(None, max_length=15000000)
+    pocket_center: Optional[List[float]] = None
+    box_size: Optional[List[float]] = None
+    exhaustiveness: int = 8
+    num_poses: int = 3
+
+
+class PipelineRunRequest(BaseModel):
+    objective: str = Field(..., max_length=2000)
+    smiles: Optional[str] = Field(None, max_length=2000)
+    target_pdb_id: Optional[str] = Field("6LU7", max_length=10)
+    pocket_center: Optional[List[float]] = None
+    box_size: Optional[List[float]] = None
+    exhaustiveness: int = 8
+
+
+class ADMETPredictionRequest(BaseModel):
+    smiles: str = Field(..., max_length=2000)
+
+
+class InteractionAnalysisRequest(BaseModel):
+    ligand_atoms: List[str]
+    ligand_coords: List[List[float]]
+    protein_ca_coords: List[List[float]]
+    residue_names: Optional[List[str]] = None
+
+
+class ResearchOrchestrateRequest(BaseModel):
+    objective: str = Field(..., max_length=2000)
+    smiles: str = Field("CCO", max_length=2000)
+    target_pdb_id: str = Field("6LU7", max_length=10)
+
+
+class ResearchPlanRequest(BaseModel):
+    objective: str = Field(..., max_length=2000)
+    smiles: Optional[str] = Field(None, max_length=2000)
+    target_pdb_id: Optional[str] = Field(None, max_length=10)
+    use_gemini: bool = True
+
+
+class CreateResearchJobRequest(BaseModel):
+    objective: str = Field(..., max_length=2000)
+    smiles: Optional[str] = Field(None, max_length=2000)
+    target_pdb_id: Optional[str] = Field(None, max_length=10)
+
+
+class ParseStructureRequest(BaseModel):
+    content: str = Field(..., max_length=15000000)
+    filename: Optional[str] = "structure.pdb"
+    format: Optional[str] = "pdb"
+
+
+class Depict2DRequest(BaseModel):
+    smiles: str = Field(..., max_length=2000)
+    width: int = 320
+    height: int = 220
+
+
+class RMSDCalculationRequest(BaseModel):
+    coords1: List[List[float]]
+    coords2: List[List[float]]
+
+
+class ToolExecutionRequest(BaseModel):
+    tool_id: str
+    params: Dict[str, Any] = Field(default_factory=dict)
+
+
+@app.get("/api/research/tools")
+async def list_scientific_tools():
+    """Lists all registered computational tools with empirical health check and capability status."""
+    try:
+        tools = tool_registry.list_tools()
+        return {"status": "success", "tools": tools, "count": len(tools)}
+    except Exception as e:
+        logger.exception("Error listing scientific tools: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/plan")
+async def formulate_research_plan(req: ResearchPlanRequest):
+    """Decomposes a research objective into an ordered executable sequence of registered tools."""
+    try:
+        plan = research_planner.plan_research(
+            objective=req.objective,
+            smiles=req.smiles,
+            target_pdb=req.target_pdb_id,
+            use_gemini=req.use_gemini
+        )
+        return {"status": "success", "plan": plan.to_dict()}
+    except Exception as e:
+        logger.exception("Error planning research: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/jobs")
+async def create_research_session(req: CreateResearchJobRequest):
+    """Creates a new stateful scientific research session with validation and persistence."""
+    try:
+        session = agent_engine.create_session(
+            objective=req.objective,
+            smiles=req.smiles,
+            target_pdb_id=req.target_pdb_id
+        )
+        return {"status": "success", "job": session.to_dict()}
+    except Exception as e:
+        logger.exception("Error creating research session: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/jobs/{job_id}/start")
+async def start_research_session(job_id: str):
+    """Starts autonomous execution of a planned scientific research session."""
+    try:
+        session = agent_engine.execute_session(job_id)
+        return {"status": "success", "job": session.to_dict()}
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Research job '{job_id}' not found.")
+    except Exception as e:
+        logger.exception("Error executing research session %s: %s", job_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/jobs/{job_id}/resume")
+async def resume_research_session(job_id: str):
+    """Resumes an eligible interrupted research workflow from its last valid checkpoint."""
+    try:
+        session = agent_engine.execute_session(job_id)
+        return {"status": "success", "job": session.to_dict()}
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Research job '{job_id}' not found.")
+    except Exception as e:
+        logger.exception("Error resuming research session %s: %s", job_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/tools/execute")
+async def execute_registered_tool(req: ToolExecutionRequest):
+    """Safely executes an authorized scientific tool directly with strict input schema checks."""
+    tool = tool_registry.get_tool(req.tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail=f"Tool '{req.tool_id}' is not in the authorized registry.")
+
+    try:
+        if req.tool_id == "rdkit_molecular_analysis":
+            smiles = req.params.get("smiles", "")
+            data = molecular_service.validate_and_parse_smiles(smiles)
+            if data.get("valid"):
+                data["properties"] = molecular_service.compute_physicochemical_properties(smiles)
+            return {"status": "success", "result": data}
+
+        elif req.tool_id == "rdkit_conformer_3d":
+            smiles = req.params.get("smiles", "")
+            num_conf = req.params.get("num_conformers", 1)
+            data = molecular_service.generate_3d_conformers(smiles, num_conf)
+            return {"status": "success", "result": data}
+
+        elif req.tool_id == "rcsb_pdb_resolver":
+            pdb_id = req.params.get("pdb_id", "")
+            data = structure_service.fetch_and_parse_pdb_backbone(pdb_id)
+            return {"status": "success", "result": data}
+
+        elif req.tool_id == "autodock_vina_docking":
+            smiles = req.params.get("smiles", "")
+            target_pdb = req.params.get("target_pdb_id", "6LU7")
+            data = docking_service.execute_docking(smiles, target_pdb)
+            return {"status": "success", "result": data}
+
+        elif req.tool_id == "openadmet_qsar":
+            smiles = req.params.get("smiles", "")
+            data = admet_service.predict_admet_profile(smiles)
+            return {"status": "success", "result": data}
+
+        elif req.tool_id == "biomedical_literature":
+            from backend.adapters.scientific_registry import scientific_registry
+            lit_adapter = scientific_registry.get_adapter("biomedical_literature")
+            query = req.params.get("query", "aspirin")
+            if lit_adapter:
+                data = lit_adapter.execute("search_literature", {"query": query})
+            else:
+                data = {"success": True, "articles": []}
+            return {"status": "success", "result": data}
+
+        else:
+            raise HTTPException(status_code=400, detail=f"Direct invocation for tool '{req.tool_id}' is not configured.")
+
+    except Exception as e:
+        logger.exception("Error executing tool %s: %s", req.tool_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/molecular/properties")
+async def calculate_molecular_properties(req: MolecularPropertiesRequest):
+    """Calculates verified Lipinski Rule of 5 descriptors, TPSA, and QED drug-likeness."""
+    try:
+        props = molecular_service.compute_physicochemical_properties(req.smiles)
+        return {"status": "success", "properties": props}
+    except Exception as e:
+        logger.exception("Error computing properties: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/research/molecular/conformers")
+async def generate_molecular_conformers(req: MolecularConformersRequest):
+    """Generates 3D Cartesian coordinates via RDKit ETKDG and MMFF94 forcefield."""
+    try:
+        conformers = molecular_service.generate_3d_conformers(req.smiles, req.num_conformers)
+        return {"status": "success", "conformers": conformers}
+    except Exception as e:
+        logger.exception("Error generating 3D conformers: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/research/structure/{pdb_id}")
+async def get_pdb_macromolecule(pdb_id: str):
+    """Retrieves official crystal structure metadata and backbone coordinates from RCSB PDB."""
+    try:
+        data = structure_service.fetch_and_parse_pdb_backbone(pdb_id)
+        return {"status": "success", "structure": data}
+    except Exception as e:
+        logger.exception("Error fetching PDB %s: %s", pdb_id, e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/research/structure/parse")
+async def parse_structure_file(req: ParseStructureRequest):
+    """Parses uploaded PDB, mmCIF, SDF, MOL, or XYZ structure coordinates with validation."""
+    try:
+        result = structure_service.parse_structure_content(req.content, req.filename or req.format)
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Failed to parse structure."))
+        return {"status": "success", "structure": result}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error parsing structure: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/molecular/depict-2d")
+async def generate_molecular_2d_depiction(req: Depict2DRequest):
+    """Renders verified publication-quality 2D vector SVG depiction using RDKit."""
+    try:
+        svg_content = molecular_service.generate_2d_depiction_svg(req.smiles, req.width, req.height)
+        return {"status": "success", "svg": svg_content, "smiles": req.smiles}
+    except Exception as e:
+        logger.exception("Error generating 2D depiction: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/research/structure/rmsd")
+async def calculate_structure_rmsd(req: RMSDCalculationRequest):
+    """Calculates Ångström root-mean-square deviation (RMSD) between aligned coordinate sets."""
+    try:
+        rmsd = structure_service.calculate_rmsd(req.coords1, req.coords2)
+        if rmsd is None:
+            raise HTTPException(status_code=400, detail="Coordinate sets must have identical non-zero atom counts.")
+        return {"status": "success", "rmsd": rmsd, "units": "Å"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error calculating RMSD: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.post("/api/research/docking")
+async def submit_docking_job(req: DockingJobRequest):
+    """Executes molecular docking with Meeko ligand preparation and AutoDock Vina scoring."""
+    try:
+        result = docking_service.execute_docking(
+            ligand_smiles=req.smiles,
+            target_pdb_id=req.target_pdb_id,
+            pocket_center=req.pocket_center,
+            box_size=req.box_size,
+            exhaustiveness=req.exhaustiveness or 8,
+            num_poses=req.num_poses or 3
+        )
+        return {"status": "success", "docking": result}
+    except Exception as e:
+        logger.exception("Error during docking execution: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/docking/run")
+async def run_advanced_docking(req: AdvancedDockingRequest):
+    """Dedicated advanced docking endpoint supporting uploaded structures, custom grid boxes, and exhaustiveness."""
+    try:
+        result = docking_service.execute_docking(
+            ligand_smiles=req.smiles or "",
+            target_pdb_id=req.target_pdb_id,
+            pocket_center=req.pocket_center,
+            box_size=req.box_size,
+            exhaustiveness=req.exhaustiveness,
+            num_poses=req.num_poses,
+            receptor_pdb_content=req.receptor_pdb_content,
+            ligand_content=req.ligand_content
+        )
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Docking execution failed."))
+        return {"status": "success", "docking": result}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error in advanced docking: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/admet")
+async def predict_admet_profile(req: ADMETPredictionRequest):
+    """Predicts validated in-silico ADMET pharmacokinetics and safety liabilities."""
+    try:
+        profile = admet_service.predict_admet_profile(req.smiles)
+        return {"status": "success", "admet": profile}
+    except Exception as e:
+        logger.exception("Error predicting ADMET: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/research/admet/predict")
+async def run_admet_prediction(req: ADMETPredictionRequest):
+    """Dedicated endpoint predicting complete 5-category ADMET profile (Absorption, Distribution, Metabolism, Excretion, Toxicity)."""
+    try:
+        profile = admet_service.predict_admet_profile(req.smiles)
+        return {"status": "success", "admet": profile}
+    except Exception as e:
+        logger.exception("Error in ADMET prediction: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/research/interactions")
+async def calculate_3d_interactions(req: InteractionAnalysisRequest):
+    """Computes exact 3D non-covalent contacts (H-bonds, salt bridges, hydrophobic, pi-stacking, halogen bonds)."""
+    try:
+        interactions = interaction_service.analyze_protein_ligand_interactions(
+            req.ligand_atoms, req.ligand_coords, req.protein_ca_coords, req.residue_names
+        )
+        fingerprint = interaction_service.summarize_interaction_fingerprint(interactions)
+        return {"status": "success", "interactions": interactions, "fingerprint": fingerprint}
+    except Exception as e:
+        logger.exception("Error analyzing interactions: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/interactions/analyze")
+async def run_interaction_analysis(req: InteractionAnalysisRequest):
+    """Dedicated endpoint computing non-covalent contacts and quantitative interaction fingerprint."""
+    try:
+        interactions = interaction_service.analyze_protein_ligand_interactions(
+            req.ligand_atoms, req.ligand_coords, req.protein_ca_coords, req.residue_names
+        )
+        fingerprint = interaction_service.summarize_interaction_fingerprint(interactions)
+        return {"status": "success", "interactions": interactions, "fingerprint": fingerprint}
+    except Exception as e:
+        logger.exception("Error in interaction analysis: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/pipeline/run")
+async def run_agentic_drug_discovery_pipeline(req: PipelineRunRequest):
+    """Executes the autonomous agentic drug discovery pipeline with real bounded stages."""
+    try:
+        session = agent_engine.create_session(
+            objective=req.objective,
+            smiles=req.smiles,
+            target_pdb_id=req.target_pdb_id or "6LU7"
+        )
+        # Execute workflow stages synchronously or via background task
+        executed_session = agent_engine.execute_session(session.id)
+        return {"status": "success", "job": executed_session.to_dict()}
+    except Exception as e:
+        logger.exception("Error in agentic drug discovery pipeline: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/research/orchestrate")
+async def orchestrate_research_workflow(req: ResearchOrchestrateRequest):
+    """Launches full multi-step autonomous scientific research workflow with provenance."""
+    try:
+        job = research_orchestrator.create_job(req.objective, req.smiles, req.target_pdb_id)
+        executed = research_orchestrator.execute_workflow(job.id)
+        return {"status": "success", "job": executed.to_dict()}
+    except Exception as e:
+        logger.exception("Error orchestrating research: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/research/jobs/{job_id}")
+async def get_research_job_status(job_id: str):
+    """Retrieves research job status, execution telemetry, and scientific monograph."""
+    # Check agent_engine session first
+    session = agent_engine.get_session(job_id)
+    if session:
+        return {"status": "success", "job": session.to_dict()}
+
+    # Fallback to research_orchestrator job
+    job = research_orchestrator.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Research job '{job_id}' not found.")
+    return {"status": "success", "job": job.to_dict()}
+
+
+@app.post("/api/research/jobs/{job_id}/cancel")
+async def cancel_research_job(job_id: str):
+    """Cancels a pending or running research job."""
+    s1 = agent_engine.cancel_session(job_id)
+    s2 = research_orchestrator.cancel_job(job_id)
+    if not (s1 or s2):
+        raise HTTPException(status_code=400, detail="Job cannot be cancelled or was not found.")
+    return {"status": "success", "message": f"Job '{job_id}' cancelled successfully."}
+
+
+class LiteratureSearchRequest(BaseModel):
+    query: str = Field(..., max_length=500)
+
+
+@app.post("/api/research/literature")
+async def search_scientific_literature(req: LiteratureSearchRequest):
+    """Retrieves peer-reviewed literature and chemical monographs from PubChem / PubMed."""
+    try:
+        from backend.adapters.scientific_registry import scientific_registry
+        lit_adapter = scientific_registry.get_adapter("biomedical_literature")
+        if lit_adapter:
+            data = lit_adapter.execute("search_literature", {"query": req.query})
+            return {"status": "success", "literature": data}
+        return {"status": "success", "literature": {"articles": []}}
+    except Exception as e:
+        logger.exception("Error searching literature: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/research/jobs/{job_id}/report")
+async def get_research_job_report(job_id: str):
+    """Retrieves the final structured scientific monograph for a research session."""
+    session = agent_engine.get_session(job_id)
+    if session and session.report_markdown:
+        return {"status": "success", "job_id": job_id, "report_markdown": session.report_markdown}
+    job = research_orchestrator.get_job(job_id)
+    if job and job.report_markdown:
+        return {"status": "success", "job_id": job_id, "report_markdown": job.report_markdown}
+    raise HTTPException(status_code=404, detail=f"Scientific report for job '{job_id}' not found or not yet generated.")
+
+
+class ApprovePlanRequest(BaseModel):
+    plan_id: str
+    approved: bool = True
+    objective: str
+    smiles: str
+    target_pdb_id: str
+
+
+@app.post("/api/research/plan/approve")
+async def approve_research_plan(req: ApprovePlanRequest):
+    """Approves a generated research plan and creates an authorized session ready for execution."""
+    try:
+        if not req.approved:
+            return {"status": "rejected", "message": "Research plan was not approved."}
+        session = agent_engine.create_session(
+            objective=req.objective,
+            smiles=req.smiles,
+            target_pdb_id=req.target_pdb_id
+        )
+        return {"status": "success", "job": session.to_dict()}
+    except Exception as e:
+        logger.exception("Error approving plan: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Serve built Vite frontend static files if dist folder exists
+
 _dist_candidates = [
     Path(__file__).resolve().parent.parent / "dist",
     Path("/app/dist"),

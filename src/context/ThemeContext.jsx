@@ -75,6 +75,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     const root = document.documentElement;
+    root.classList.add('theme-transitioning');
     root.setAttribute('data-theme', theme);
     if (theme === 'dark') {
       root.classList.add('dark');
@@ -83,6 +84,12 @@ export function ThemeProvider({ children }) {
       root.classList.add('light');
       root.classList.remove('dark');
     }
+
+    const timer = setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+    }, 400);
+
+    return () => clearTimeout(timer);
   }, [theme]);
 
   return (

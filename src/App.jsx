@@ -28,6 +28,8 @@ const Settings = React.lazy(() => import('./pages/Settings'));
 const ResearchProjects = React.lazy(() => import('./pages/ResearchProjects'));
 const ChromatographyPage = React.lazy(() => import('./pages/ChromatographyPage'));
 const UserWorkspace = React.lazy(() => import('./pages/UserWorkspace'));
+const AIAutomationCenter = React.lazy(() => import('./pages/AIAutomationCenter'));
+const ReactionExplorer = React.lazy(() => import('./pages/ReactionExplorer'));
 
 import GlobalLoadingBar from './components/common/GlobalLoadingBar';
 import PageLoader from './components/common/PageLoader';
@@ -52,6 +54,8 @@ export default function App() {
                 <Route element={<Layout />}>
                   <Route path="/" element={<Landing />} />
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/ai-automation" element={<AIAutomationCenter />} />
+                  <Route path="/ai-automation-center" element={<Navigate to="/ai-automation" replace />} />
                   <Route path="/chemdraw" element={<ChemDraw />} />
                   <Route path="/rdkit-lab" element={<AIChemistryLab />} />
                   <Route path="/quantum-library" element={<QuantumLab />} />
@@ -63,6 +67,8 @@ export default function App() {
                   <Route path="/scientists" element={<ChemistsPage />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/research-projects" element={<ResearchProjects />} />
+                  <Route path="/reaction-explorer" element={<ReactionExplorer />} />
+                  <Route path="/reactions" element={<Navigate to="/reaction-explorer" replace />} />
 
                   {/* Authenticated / Researcher Workspace */}
                   <Route

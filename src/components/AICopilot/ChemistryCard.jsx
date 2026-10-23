@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Atom, Copy, Check, ExternalLink, Activity, Sparkles, Beaker } from 'lucide-react';
+import { Atom, Copy, Check, ExternalLink, Activity, Sparkles, Beaker, Radio } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { parseSmilesTo2D } from '../../services/chemicalGraph';
 
@@ -201,6 +201,13 @@ export default function ChemistryCard({ data, onAnalyze }) {
     }
   };
 
+  const handleOpenSpectroscopy = () => {
+    try {
+      localStorage.setItem('chemspace_active_mol', JSON.stringify({ smiles, name }));
+    } catch (e) {}
+    navigate(smiles ? `/spectroscopy?smiles=${encodeURIComponent(smiles)}` : '/spectroscopy');
+  };
+
   return (
     <div className="my-3 p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm overflow-hidden relative group transition-all hover:border-[var(--border-strong)]">
       {/* Header */}
@@ -275,23 +282,32 @@ export default function ChemistryCard({ data, onAnalyze }) {
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <button
           onClick={handleOpenChemDraw}
-          className="py-2 px-3 rounded-xl btn-secondary text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+          className="py-2 px-2 rounded-xl btn-secondary text-[11px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+          title="Open in 2D/3D ChemDraw"
         >
-          <Beaker className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Open in ChemDraw</span>
-          <ExternalLink className="w-3 h-3 text-[var(--text-muted)]" />
+          <Beaker className="w-3 h-3 text-emerald-500" />
+          <span className="truncate">ChemDraw</span>
         </button>
 
         <button
           onClick={handleAnalyzeRDKit}
-          className="py-2 px-3 rounded-xl btn-primary text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+          className="py-2 px-2 rounded-xl btn-primary text-[11px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+          title="Analyze physicochemical descriptors in RDKit Lab"
         >
-          <Activity className="w-3.5 h-3.5" />
-          <span>Analyze in RDKit</span>
-          <ExternalLink className="w-3 h-3 opacity-60" />
+          <Activity className="w-3 h-3" />
+          <span className="truncate">RDKit Lab</span>
+        </button>
+
+        <button
+          onClick={handleOpenSpectroscopy}
+          className="py-2 px-2 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 text-[11px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+          title="Simulate FT-IR, NMR, and UV-Vis spectra"
+        >
+          <Radio className="w-3 h-3 text-sky-400" />
+          <span className="truncate">Spectra</span>
         </button>
       </div>
     </div>
